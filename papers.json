@@ -1,0 +1,764 @@
+{
+  "sections": [
+    {
+      "id": "A",
+      "title": "Section A — Must-Cite Papers",
+      "blurb": "Direct antecedents and close contemporaries. These are the works a reviewer in model-order reduction will expect to see cited.",
+      "categories": [
+        {
+          "id": "foundation",
+          "title": "Foundation",
+          "blurb": "The paper that invented NM-ROM plus the linear-subspace LSPG and DEIM that it generalizes.",
+          "papers": [
+            {
+              "slug": "lee-carlberg-2020",
+              "title": "Model reduction of dynamical systems on nonlinear manifolds using deep convolutional autoencoders",
+              "authors": "Kookjin Lee, Kevin Carlberg",
+              "year": 2020,
+              "venue": "Journal of Computational Physics",
+              "citations": 803,
+              "doi": "10.1016/j.jcp.2019.108973",
+              "arxiv": "1812.08373",
+              "pdf": "pdfs/A-must-cite/foundation/lee-carlberg-2020.pdf",
+              "summary": "The paper that invented NM-ROM. Lee and Carlberg argue that every classical projection-based reduced-order method — balanced truncation, rational interpolation, reduced-basis, POD-Galerkin — projects onto a linear subspace, which fundamentally caps accuracy for problems with slowly-decaying Kolmogorov n-width, i.e. advection-dominated PDEs. They replace the linear subspace with a nonlinear manifold learned by a convolutional autoencoder, and derive two projection schemes that keep the dynamics physics-consistent: manifold Galerkin (time-continuous minimum-residual) and manifold LSPG (time-discrete minimum-residual, generalising Carlberg's earlier linear-subspace LSPG). A posteriori error bounds are proved at the time-discrete level. On 1D Burgers and a 2D chemically-reacting flow the method beats the optimal linear-subspace ROM by an order of magnitude in accuracy at the same latent dimension. This is the intellectual anchor of every nonlinear-manifold ROM paper since.",
+              "closed_access": false
+            },
+            {
+              "slug": "carlberg-bou-mosleh-farhat-2011",
+              "title": "Efficient non-linear model reduction via a least-squares Petrov–Galerkin projection and compressive tensor approximations",
+              "authors": "Kevin Carlberg, Charbel Bou-Mosleh, Charbel Farhat",
+              "year": 2011,
+              "venue": "Int. J. Numer. Meth. Engng",
+              "citations": 600,
+              "doi": "10.1002/nme.3050",
+              "summary": "The paper that introduced least-squares Petrov–Galerkin (LSPG) projection for nonlinear model reduction on linear subspaces, together with the Gauss–Newton with Approximated Tensors (GNAT) hyper-reduction. Carlberg et al. argue that standard Galerkin projection of the FOM nonlinear residual onto a POD trial basis is not energy-stable and often inaccurate; instead they project the discrete-in-time residual in a least-squares sense using a separate test basis, giving an ODE-level Petrov–Galerkin method that is stable and consistent with nonlinear solvers such as Newton and Gauss–Newton. To make each residual and Jacobian evaluation cheap, they introduce gappy-POD-based compressive tensor approximations of the nonlinear functions. The LSPG idea is what Lee–Carlberg later lifts onto nonlinear manifolds and what your paper's latent Gauss–Newton is doing in the small.",
+              "closed_access": true
+            },
+            {
+              "slug": "chaturantabut-sorensen-2010",
+              "title": "Nonlinear Model Reduction via Discrete Empirical Interpolation",
+              "authors": "Saifon Chaturantabut, Danny C. Sorensen",
+              "year": 2010,
+              "venue": "SIAM J. Sci. Comput.",
+              "citations": 1882,
+              "doi": "10.1137/090766498",
+              "summary": "The original DEIM paper — the ancestor of every hyper-reduction scheme including yours. Chaturantabut and Sorensen observe that POD–Galerkin reduces the dimension of the state but does not reduce the cost of evaluating the nonlinear residual: the nonlinear term still depends on every grid point. DEIM picks a small set of interpolation indices greedily from a POD basis of nonlinear-function snapshots, and approximates the nonlinear term as an interpolant through a low-rank matrix times values sampled only at those indices. Cost becomes independent of the full-order dimension. The method is proved exact on the POD nonlinear subspace and endowed with an a priori error bound. Every subsequent sampling-based hyper-reduction (GNAT, EQ, ECSW, over-collocation, the node sampling in your NM-ROM) descends from this one.",
+              "closed_access": true
+            },
+            {
+              "slug": "carlberg-farhat-cortial-amsallem-2013",
+              "title": "The GNAT method for nonlinear model reduction: effective implementation and application to computational fluid dynamics and turbulent flows",
+              "authors": "Kevin Carlberg, Charbel Farhat, Julien Cortial, David Amsallem",
+              "year": 2013,
+              "venue": "Journal of Computational Physics",
+              "citations": 550,
+              "doi": "10.1016/j.jcp.2013.02.028",
+              "summary": "The GNAT method — Gauss–Newton with Approximated Tensors — is the direct computational template for your sample-node Gauss–Newton solver, just on linear subspaces. Carlberg et al. combine LSPG projection with gappy-POD hyper-reduction: the residual and Jacobian are only evaluated on a small set of sample rows, and the missing entries are reconstructed via a gappy-POD interpolant. The resulting online cost is independent of the full-order dimension. They demonstrate the method on compressible turbulent CFD — a much harder benchmark than the 1D advection problems typical in reduced-order modelling — and show substantial speed-ups over POD–Galerkin with preserved accuracy. Every sampling-based NM-ROM since, including Kim–Choi and the Romor–Stabile–Rozza reduced-over-collocation, is structurally a GNAT with the linear subspace replaced by a learned manifold.",
+              "closed_access": true
+            }
+          ]
+        },
+        {
+          "id": "eq-nmrom-line",
+          "title": "The EQ / hyper-reduction NM-ROM line",
+          "blurb": "The direct predecessors that added hyper-reduction to NM-ROM. This is the lineage your paper extends.",
+          "papers": [
+            {
+              "slug": "kim-choi-2022",
+              "title": "A fast and accurate physics-informed neural network reduced order model with shallow masked autoencoder",
+              "authors": "Youngkyu Kim, Youngsoo Choi, David Widemann, Tarek Zohdi",
+              "year": 2022,
+              "venue": "Journal of Computational Physics",
+              "citations": 150,
+              "doi": "10.1016/j.jcp.2021.110841",
+              "arxiv": "2009.11990",
+              "pdf": "pdfs/A-must-cite/eq-nmrom-line/kim-choi-2022.pdf",
+              "summary": "The paper that introduced hyper-reduction for NM-ROM and the most important direct predecessor to your work. Kim, Choi et al. observe that Lee–Carlberg's convolutional autoencoder makes the decoder Jacobian dense: to compute one row you have to run the whole deconvolutional network, and hyper-reduction savings evaporate. They replace the CAE with a shallow, masked (sparsity-constrained) fully-connected autoencoder so that each output grid point depends only on a handful of latent features and a handful of neighbors, and the per-node decoder row can be assembled in O(1). They then combine this with least-squares Petrov–Galerkin on sample nodes plus an empirical-interpolation-style node selection. On 1D inviscid Burgers and 2D Burgers they report wall-clock speedups that are actually faster than the FOM, which Lee–Carlberg's CAE-NM-ROM was not. Your CP-tensor decoder is a structured alternative to their masked MLP.",
+              "closed_access": false
+            },
+            {
+              "slug": "diaz-choi-heinkenschloss-2024",
+              "title": "A fast and accurate domain-decomposition nonlinear manifold reduced order model",
+              "authors": "Alejandro N. Diaz, Youngsoo Choi, Matthias Heinkenschloss",
+              "year": 2024,
+              "venue": "Computer Methods in Applied Mechanics and Engineering",
+              "citations": 27,
+              "doi": "10.1016/j.cma.2024.116943",
+              "arxiv": "2305.15163",
+              "pdf": "pdfs/A-must-cite/eq-nmrom-line/diaz-choi-heinkenschloss-2024.pdf",
+              "summary": "The principled scale-up of Kim–Choi to large meshes. The problem: training a monolithic autoencoder whose output layer has one neuron per grid point is infeasible for extreme-scale FOMs — parameter count scales with mesh size. Diaz, Choi, and Heinkenschloss decompose the physical domain into overlapping subdomains and train a small autoencoder per subdomain, with an interface-continuity enforcement in the online solve. Each local autoencoder is shallow and sparse à la Kim–Choi, so local hyper-reduction is cheap. The resulting DD-NM-ROM trains in hours on problems where monolithic NM-ROM cannot fit in GPU memory, and converges under mesh refinement. This is the most competitive current alternative to your global-ViT-with-CP-decoder approach — they scale by tiling many small decoders; you scale by keeping a single decoder but making it structurally separable.",
+              "closed_access": false
+            },
+            {
+              "slug": "romor-stabile-rozza-2023",
+              "title": "Non-linear Manifold Reduced-Order Models with Convolutional Autoencoders and Reduced Over-Collocation Method",
+              "authors": "Francesco Romor, Giovanni Stabile, Gianluigi Rozza",
+              "year": 2023,
+              "venue": "Journal of Scientific Computing",
+              "citations": 57,
+              "doi": "10.1007/s10915-023-02128-2",
+              "arxiv": "2203.00360",
+              "pdf": "pdfs/A-must-cite/eq-nmrom-line/romor-stabile-rozza-2023.pdf",
+              "summary": "The closest non-Choi-group competitor to your paper and an independent reinvention of CAE-NM-ROM with hyper-reduction. Romor, Stabile, and Rozza combine a convolutional autoencoder decoder with reduced over-collocation (ROC): rather than projecting the residual onto a test basis (LSPG) they simply require the residual to vanish on a small set of over-sampled collocation points, which is cheaper to assemble for CAE decoders. They handle advection-dominated benchmarks (nonlinear conservation laws, compressible fluid flow) where linear POD–Galerkin fails. The cost story is different from Kim–Choi: ROC requires more sample points than LSPG for stability but avoids constructing the test basis. You must differentiate from this paper directly — their contribution is the sampling scheme and CAE; yours is a structurally EQ-compatible decoder with a Jacobian-regularity argument.",
+              "closed_access": false
+            },
+            {
+              "slug": "cheung-choi-copeland-huynh-2022",
+              "title": "Local Lagrangian reduced-order modeling for the Rayleigh–Taylor instability by solution manifold decomposition",
+              "authors": "Siu Wun Cheung, Youngsoo Choi, Dylan Copeland, Kevin Huynh",
+              "year": 2022,
+              "venue": "Journal of Computational Physics",
+              "citations": 32,
+              "doi": "10.1016/j.jcp.2022.111655",
+              "arxiv": "2203.01797",
+              "pdf": "pdfs/A-must-cite/eq-nmrom-line/cheung-choi-copeland-huynh-2022.pdf",
+              "summary": "A different response to the same problem your paper tackles — 'one decoder cannot cover all physical regimes.' Cheung et al. propose solution-manifold decomposition: cluster the FOM snapshots by physical regime (time window, parameter patch) and train one local linear ROM per cluster, then route online queries to the right local model. This is the ROM analog of a mixture-of-experts. They demonstrate on Rayleigh–Taylor instability in Lagrangian hydrodynamics, where the flow transitions from laminar to turbulent and a single global basis is poorly conditioned. Relative to your paper, it is a complementary fix: they partition the data; you keep one global decoder but make its Jacobian uniformly well-conditioned by the linear-skip design. Cite this as 'local/partitioned NM-ROMs' in the related-work taxonomy.",
+              "closed_access": false
+            }
+          ]
+        },
+        {
+          "id": "quadratic-manifolds",
+          "title": "Quadratic-manifold decoders",
+          "blurb": "Decoders restricted to u = Vz + (V̄)(z⊗z) — an explicit bet on decoder Jacobian simplicity. Closest in spirit to your Jacobian-regularity argument.",
+          "papers": [
+            {
+              "slug": "geelen-wright-willcox-2022",
+              "title": "Operator inference for non-intrusive model reduction with quadratic manifolds",
+              "authors": "Rudy Geelen, Stephen J. Wright, Karen Willcox",
+              "year": 2022,
+              "venue": "Computer Methods in Applied Mechanics and Engineering",
+              "citations": 98,
+              "doi": "10.1016/j.cma.2022.115717",
+              "arxiv": "2205.02304",
+              "pdf": "pdfs/A-must-cite/quadratic-manifolds/geelen-wright-willcox-2022.pdf",
+              "summary": "The most closely aligned prior paper to your Jacobian-regularity argument. Geelen, Wright, and Willcox represent the solution manifold as the image of a quadratic map u = Vz + (V̄)(z⊗z) — a POD linear part plus a learned quadratic correction — and combine it with operator inference for non-intrusive MOR. Their entire motivation is that the manifold must have a well-behaved Jacobian so that projected-equation solvers stay stable: a quadratic map has an analytically tractable Jacobian that does not collapse anywhere. They show on advection-dominated benchmarks that the quadratic manifold beats POD with the same dimension. Contrast with your paper: they restrict the class of manifolds to quadratic; you keep a deep encoder and non-quadratic decoder but enforce via architecture (linear skip + CP-tensor) that the Jacobian is lower-bounded. Same philosophy, different manifold family.",
+              "closed_access": false
+            },
+            {
+              "slug": "barnett-farhat-2022",
+              "title": "Quadratic approximation manifold for mitigating the Kolmogorov barrier in nonlinear projection-based model order reduction",
+              "authors": "Joshua Barnett, Charbel Farhat",
+              "year": 2022,
+              "venue": "Journal of Computational Physics",
+              "citations": 45,
+              "doi": "10.1016/j.jcp.2022.111348",
+              "arxiv": "2204.12454",
+              "pdf": "pdfs/A-must-cite/quadratic-manifolds/barnett-farhat-2022.pdf",
+              "summary": "Parallel development of quadratic-manifold ROM from the Farhat group. Barnett and Farhat fit a quadratic map whose linear part is a POD basis and whose quadratic part is determined by a regression that minimizes snapshot reconstruction error subject to orthogonality constraints. They prove error bounds and demonstrate on nonlinear elasticity and a shock-dominated Burgers problem that the quadratic manifold closes the Kolmogorov-barrier gap: the ROM dimension needed for fixed accuracy drops by roughly a factor of two compared to linear POD, without the black-box training of a neural-network manifold. Together with Geelen–Wright–Willcox this is the non-neural alternative to NM-ROM. Your paper should concede that the quadratic-manifold family is the gold standard for Jacobian regularity, and argue that a CP-tensor decoder with linear skip is competitive without restricting to quadratic expressivity.",
+              "closed_access": false
+            }
+          ]
+        },
+        {
+          "id": "latent-dynamics",
+          "title": "Latent-dynamics learning (DL-ROM, LaSDI)",
+          "blurb": "The non-intrusive alternative: train an autoencoder then learn an ODE / regression from (t,μ) to latent. No PDE solver in the online phase.",
+          "papers": [
+            {
+              "slug": "fresca-dede-manzoni-2021",
+              "title": "A Comprehensive Deep Learning-based Approach to Reduced Order Modeling of Nonlinear Time-Dependent Parametrized PDEs",
+              "authors": "Stefania Fresca, Luca Dedè, Andrea Manzoni",
+              "year": 2021,
+              "venue": "Journal of Scientific Computing",
+              "citations": 310,
+              "doi": "10.1007/s10915-021-01462-7",
+              "arxiv": "2001.04001",
+              "pdf": "pdfs/A-must-cite/latent-dynamics/fresca-dede-manzoni-2021.pdf",
+              "summary": "The canonical DL-ROM paper and the non-intrusive alternative to NM-ROM. Fresca, Dedè, and Manzoni train a convolutional autoencoder on FOM snapshots and then train a deep feed-forward network that regresses the latent code directly from (t, μ). The online phase contains no PDE solver — you evaluate the regression network, decode, done. The method is therefore embarrassingly fast at inference but is not physics-informed: there is no residual minimization, no Galerkin projection, and no a posteriori error certification. They demonstrate on Burgers, a parametrized heat equation, and a chemically reacting flow that the DL-ROM matches POD–Galerkin at far smaller latent dimension. Your paper's positioning: you pay the cost of an online GN solve to get physics consistency and sub-percent accuracy on unseen PDE parameters, which DL-ROM cannot guarantee.",
+              "closed_access": false
+            },
+            {
+              "slug": "fresca-manzoni-2022",
+              "title": "POD-DL-ROM: Enhancing deep learning-based reduced order models for nonlinear parametrized PDEs by proper orthogonal decomposition",
+              "authors": "Stefania Fresca, Andrea Manzoni",
+              "year": 2022,
+              "venue": "Computer Methods in Applied Mechanics and Engineering",
+              "citations": 240,
+              "doi": "10.1016/j.cma.2021.114181",
+              "arxiv": "2101.11845",
+              "pdf": "pdfs/A-must-cite/latent-dynamics/fresca-manzoni-2022.pdf",
+              "summary": "The efficient successor to DL-ROM. Fresca and Manzoni observe that training a CAE from u ∈ R^N directly is expensive and the N-dimensional decoder output layer is wasteful. They pre-compress the snapshots with POD onto an intermediate dimension N_r, then train the autoencoder + regression network on the POD coefficients. The autoencoder's job is to learn the nonlinear manifold *inside* the POD subspace, which it does with a tiny fully-connected net; the POD basis handles the N-to-N_r lift at evaluation time. Training cost drops by two-to-three orders of magnitude and online evaluation is a matrix–vector product plus a cheap network forward pass. POD-DL-ROM is the deployment-grade version of DL-ROM and the strongest non-intrusive baseline you should compare timings against.",
+              "closed_access": false
+            },
+            {
+              "slug": "maulik-lusch-balaprakash-2021",
+              "title": "Reduced-order modeling of advection-dominated systems with recurrent neural networks and convolutional autoencoders",
+              "authors": "Romit Maulik, Bethany Lusch, Prasanna Balaprakash",
+              "year": 2021,
+              "venue": "Physics of Fluids",
+              "citations": 282,
+              "doi": "10.1063/5.0039986",
+              "arxiv": "2002.00470",
+              "pdf": "pdfs/A-must-cite/latent-dynamics/maulik-lusch-balaprakash-2021.pdf",
+              "summary": "The canonical time-continuous DL-ROM baseline. Maulik, Lusch, and Balaprakash combine a convolutional autoencoder for spatial compression with an LSTM that evolves the latent code in time. Unlike Fresca–Dedè–Manzoni their network is autoregressive: given the history of latent states, the LSTM predicts the next latent state, and the CAE decodes. They focus on advection-dominated benchmarks (viscous Burgers with small ν, 2D flow past a cylinder, shallow-water equations) which are exactly the regimes where POD–Galerkin fails because Kolmogorov n-width decays slowly. The paper is the most frequently cited DL-ROM baseline in fluid-mechanics venues. Your paper differs: you do not learn a latent dynamics model at all. You solve the full projected PDE in the latent space at each parameter query, which gives you parameter generalisation that LSTM-latent rollouts do not.",
+              "closed_access": false
+            },
+            {
+              "slug": "fries-he-choi-2022",
+              "title": "LaSDI: Parametric Latent Space Dynamics Identification",
+              "authors": "William Fries, Xiaolong He, Youngsoo Choi",
+              "year": 2022,
+              "venue": "Computer Methods in Applied Mechanics and Engineering",
+              "citations": 70,
+              "doi": "10.1016/j.cma.2022.115436",
+              "arxiv": "2204.09980",
+              "pdf": "pdfs/A-must-cite/latent-dynamics/fries-he-choi-2022.pdf",
+              "summary": "The Choi group's answer to DL-ROM: instead of regressing the latent code from (t, μ), identify a *differential equation* that the latent code satisfies. LaSDI trains an autoencoder, collects latent trajectories for each training parameter, fits a SINDy-style sparse regression to each trajectory to get a per-parameter latent ODE, and interpolates the identified ODE across parameters. Online, given a new μ, you interpolate the latent ODE coefficients and integrate. The appeal: you get continuous-time latent dynamics and a small symbolic model instead of a black-box LSTM. The weakness: the identified ODEs are only as good as SINDy's term library, and interpolation across μ can fail if regimes change. LaSDI is the intellectual origin of the entire subsequent Choi-group latent-dynamics thread (gLaSDI, WLaSDI).",
+              "closed_access": false
+            },
+            {
+              "slug": "he-choi-fries-belof-chen-2023",
+              "title": "gLaSDI: Parametric physics-informed greedy latent space dynamics identification",
+              "authors": "Xiaolong He, Youngsoo Choi, William Fries, Jonathan L. Belof, Jiun-Shyan Chen",
+              "year": 2023,
+              "venue": "Journal of Computational Physics",
+              "citations": 34,
+              "doi": "10.1016/j.jcp.2023.112267",
+              "arxiv": "2204.12005",
+              "pdf": "pdfs/A-must-cite/latent-dynamics/he-choi-fries-belof-chen-2023.pdf",
+              "summary": "The physics-informed, adaptive successor to LaSDI. He et al. build on LaSDI but (a) make the latent ODE fitting physics-informed by adding a loss term that penalises the FOM residual evaluated on the decoded prediction, and (b) greedily select training parameters: instead of a dense tensor-product sweep, they repeatedly find the parameter at which the current ROM has worst FOM-residual error and add a FOM simulation there. The combination gives substantially smaller training sets for the same online accuracy. For your paper, gLaSDI matters as an example of latent-space physics enforcement that does not require a projected PDE solve at online time — which is a weaker form of physics consistency than your LSPG+EQ approach, and a useful contrast point in related work.",
+              "closed_access": false
+            },
+            {
+              "slug": "tran-he-messenger-choi-bortz-2024",
+              "title": "Weak-form latent space dynamics identification (WLaSDI)",
+              "authors": "April Tran, Xiaolong He, Daniel A. Messenger, Youngsoo Choi, David M. Bortz",
+              "year": 2024,
+              "venue": "Computer Methods in Applied Mechanics and Engineering",
+              "citations": 18,
+              "doi": "10.1016/j.cma.2024.116998",
+              "arxiv": "2311.12880",
+              "pdf": "pdfs/A-must-cite/latent-dynamics/tran-he-messenger-choi-bortz-2024.pdf",
+              "summary": "Noise-robust LaSDI. Tran et al. replace the strong-form SINDy regression inside LaSDI with a weak-form identification — the governing ODE for the latent coefficients is inferred from integrated-against-test-functions data rather than pointwise derivatives. This is the standard trick in the data-driven-equations literature (Messenger–Bortz 2021) to kill derivative-noise amplification; applying it to LaSDI lets them identify cleaner latent dynamics from noisier FOM snapshots or lower-resolution training data. Online evaluation is unchanged: integrate the identified ODE forward, decode. WLaSDI is the current state-of-the-art in the LaSDI family and an important citation as a Choi-group alternative to sampling-based NM-ROM.",
+              "closed_access": false
+            },
+            {
+              "slug": "bonneville-et-al-2024",
+              "title": "A Comprehensive Review of Latent Space Dynamics Identification Algorithms for Intrusive and Non-Intrusive Reduced-Order-Modeling",
+              "authors": "Christophe Bonneville, Xiaolong He, April Tran, Jun Sur Park, William Fries, Daniel A. Messenger, Siu Wun Cheung, Jonathan L. Belof, David M. Bortz, Youngsoo Choi",
+              "year": 2024,
+              "venue": "arXiv",
+              "citations": 8,
+              "doi": "10.48550/arxiv.2403.10748",
+              "arxiv": "2403.10748",
+              "pdf": "pdfs/A-must-cite/latent-dynamics/bonneville-et-al-2024.pdf",
+              "summary": "The one-stop survey of the entire LaSDI family. Bonneville et al. collect LaSDI, gLaSDI, WLaSDI, tLaSDI (thermodynamically consistent variant), GPLaSDI (Gaussian-process latent), and the non-intrusive variants into a unified taxonomy with consistent benchmarks on Burgers, heat, and Rayleigh–Taylor. They compare against linear POD–Galerkin, DL-ROM, and, crucially for your paper, against NM-ROM with hyper-reduction. Read this if you want a single citation that covers the entire non-intrusive Choi-group side of the field. Their comparative timing tables are also the cleanest current reference for 'how fast is DL-ROM really' which you should cite when framing your online speedup numbers.",
+              "closed_access": false
+            }
+          ]
+        },
+        {
+          "id": "neural-operators",
+          "title": "Neural operators (competitor paradigm)",
+          "blurb": "Learn the solution operator μ → u directly. Competing framework that reviewers will ask about.",
+          "papers": [
+            {
+              "slug": "li-fno-2021",
+              "title": "Fourier Neural Operator for Parametric Partial Differential Equations",
+              "authors": "Zongyi Li, Nikola Kovachki, Kamyar Azizzadenesheli, Burigede Liu, Kaushik Bhattacharya, Andrew Stuart, Anima Anandkumar",
+              "year": 2021,
+              "venue": "ICLR",
+              "citations": 228,
+              "doi": "10.48550/arxiv.2010.08895",
+              "arxiv": "2010.08895",
+              "pdf": "pdfs/A-must-cite/neural-operators/li-fno-2021.pdf",
+              "summary": "The Fourier Neural Operator, the defining paper of the neural-operator paradigm and the main competitor framework to NM-ROM at the level of framing. Li et al. argue that many PDE surrogates learn a function on a fixed grid; FNO instead learns an operator between function spaces — given the PDE coefficient field μ as an input function, it outputs the solution u as an output function, discretised on whatever grid you like at inference. The trick is a spectral convolution layer: FFT, pointwise multiply with learnable complex weights on low Fourier modes, iFFT, nonlinearity. This yields a discretisation-invariant, grid-independent surrogate. The model has no PDE solver online — it is a learned map. Your paper must position against FNO: NM-ROM is intrusive and slower to evaluate but generalises to new parameters without retraining and enforces the PDE residual.",
+              "closed_access": false
+            },
+            {
+              "slug": "lu-deeponet-2021",
+              "title": "Learning nonlinear operators via DeepONet based on the universal approximation theorem of operators",
+              "authors": "Lu Lu, Pengzhan Jin, Guofei Pang, Zhongqiang Zhang, George Em Karniadakis",
+              "year": 2021,
+              "venue": "Nature Machine Intelligence",
+              "citations": 1200,
+              "doi": "10.1038/s42256-021-00302-5",
+              "arxiv": "1910.03193",
+              "pdf": "pdfs/A-must-cite/neural-operators/lu-deeponet-2021.pdf",
+              "summary": "DeepONet — the other founding neural-operator architecture. Lu et al. operationalise the universal operator approximation theorem of Chen & Chen (1995) with a two-headed network: a 'branch' network that encodes the input function (PDE coefficient, initial condition, etc.) into a finite vector, and a 'trunk' network that takes a query location x and returns a basis at that location. The output is the dot product of the branch and trunk vectors. Training is supervised on (input function, output function, evaluation point) triples. Compared to FNO, DeepONet is more flexible about input/output geometry (arbitrary sensor locations, non-rectangular domains) but does not inherit Fourier's spectral efficiency. Cite both as the two canonical neural operators. Your paper's stance against them is identical: projection vs. regression, with-solver vs. solver-free.",
+              "closed_access": false
+            },
+            {
+              "slug": "kovachki-neural-operator-2023",
+              "title": "Neural Operator: Learning Maps Between Function Spaces",
+              "authors": "Nikola Kovachki, Zongyi Li, Burigede Liu, Kamyar Azizzadenesheli, Kaushik Bhattacharya, Andrew Stuart, Anima Anandkumar",
+              "year": 2023,
+              "venue": "Journal of Machine Learning Research",
+              "citations": 79,
+              "doi": "10.48550/arxiv.2108.08481",
+              "arxiv": "2108.08481",
+              "pdf": "pdfs/A-must-cite/neural-operators/kovachki-neural-operator-2023.pdf",
+              "summary": "The unifying theoretical paper for neural operators. Kovachki et al. formalise the neural-operator class as compositions of linear integral operators (parameterised by learnable kernels) interleaved with pointwise nonlinearities, prove a universal-approximation theorem for this class on function spaces, and show that FNO, DeepONet, graph neural operators, and low-rank neural operators are all special cases. The paper is the canonical citation when you want to say 'neural operators, in general' rather than 'FNO specifically.' Useful for your related-work section because it lets you cite one paper instead of six when you compare against the entire paradigm. Also contains the cleanest proof that neural operators are discretisation-invariant in a precise sense — which is what reviewers usually mean when they push back on 'why not just use FNO'.",
+              "closed_access": false
+            }
+          ]
+        },
+        {
+          "id": "surveys",
+          "title": "Surveys and reviews",
+          "blurb": "One-stop citations for the intro paragraph.",
+          "papers": [
+            {
+              "slug": "benner-gugercin-willcox-2015",
+              "title": "A Survey of Projection-Based Model Reduction Methods for Parametric Dynamical Systems",
+              "authors": "Peter Benner, Serkan Gugercin, Karen Willcox",
+              "year": 2015,
+              "venue": "SIAM Review",
+              "citations": 1800,
+              "doi": "10.1137/130932715",
+              "summary": "The standard citation for 'projection-based ROM' as a field. Benner, Gugercin, and Willcox survey balanced truncation, rational interpolation, proper orthogonal decomposition, reduced-basis methods, and their parametric variants, and organize them by the structure of the reduction (subspace, Petrov–Galerkin vs Galerkin, interpolation vs projection). They include a thorough treatment of how parametric dependence is handled: affine decompositions, empirical interpolation (EIM), matrix DEIM. The survey predates the deep-learning era by a few years but its taxonomy of reduction strategies is still how the community talks about ROM at conference introductions. Use this as the default 'for projection-based ROM see …' citation in your intro; pair it with Hesthaven–Pagliantini–Rozza 2022 for the modern time-dependent extension.",
+              "closed_access": true
+            },
+            {
+              "slug": "hesthaven-pagliantini-rozza-2022",
+              "title": "Reduced basis methods for time-dependent problems",
+              "authors": "Jan S. Hesthaven, Cecilia Pagliantini, Gianluigi Rozza",
+              "year": 2022,
+              "venue": "Acta Numerica",
+              "citations": 87,
+              "doi": "10.1017/S0962492922000058",
+              "summary": "The most recent authoritative survey of reduced-basis methods, with emphasis on time-dependent problems and modern extensions. Hesthaven, Pagliantini, and Rozza cover classical RB theory, greedy algorithms for snapshot selection, POD and its variants, EIM and DEIM, and then spend substantial space on nonlinear-manifold approaches (autoencoders, deep networks, Koopman), structure-preserving reduction (symplectic RB for Hamiltonian systems), and error estimation under parametric variation. The article is written at the level of Acta Numerica — full proofs, open questions explicitly stated — and is the best single reference for situating an NM-ROM paper in the broader ROM literature. Cite it as the modern companion to Benner–Gugercin–Willcox; cite it in your related work when you need to acknowledge the classical RB lineage.",
+              "closed_access": true
+            },
+            {
+              "slug": "ghattas-willcox-2021",
+              "title": "Learning physics-based models from data: perspectives from inverse problems and model reduction",
+              "authors": "Omar Ghattas, Karen Willcox",
+              "year": 2021,
+              "venue": "Acta Numerica",
+              "citations": 140,
+              "doi": "10.1017/S0962492921000064",
+              "summary": "A framing-level citation rather than a methods citation. Ghattas and Willcox write a unified treatment of inverse problems and model reduction from the viewpoint that both fields learn low-dimensional structure from data under a physics model: inverse problems infer parameters given an output; model reduction learns a manifold of outputs for varying parameters. They discuss operator inference, learned manifolds, Bayesian UQ for ROMs, and the role of physics priors in stabilising learning under limited data. The paper is the right citation when you want to argue 'machine-learned ROMs are a principled extension of the classical inverse-problem / data-assimilation lineage, not a departure from it' — which is often useful framing against pure neural-operator papers. Not methods-useful for your paper, but intro-useful.",
+              "closed_access": true
+            },
+            {
+              "slug": "brunton-noack-koumoutsakos-2020",
+              "title": "Machine Learning for Fluid Mechanics",
+              "authors": "Steven L. Brunton, Bernd R. Noack, Petros Koumoutsakos",
+              "year": 2020,
+              "venue": "Annual Review of Fluid Mechanics",
+              "citations": 1500,
+              "doi": "10.1146/annurev-fluid-010719-060214",
+              "summary": "The defining survey of ML for fluid mechanics. Brunton, Noack, and Koumoutsakos cover supervised, unsupervised, and reinforcement learning for flow modelling, reduced-order modelling, turbulence closure, flow control, and experimental design. The article is agnostic about method details and focuses on taxonomy and research opportunities. For your paper it is the right citation when you want to place NM-ROM inside the broader 'ML for CFD' frame in one sentence of the intro. Often paired with Vinuesa–Brunton 2022 (Nature Computational Science) for the same purpose. If your target is a NeurIPS audience rather than CMAME, this survey is the better intro citation because it is more interdisciplinary and better known to ML reviewers than the fluid-mechanics-internal surveys.",
+              "closed_access": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "title": "Section B — Further relevant work",
+      "blurb": "Broader literature: adjacent approaches, hyper-reduction classics you'll mention in methods, neural operators beyond the headline papers, and related paradigms.",
+      "categories": [
+        {
+          "id": "nm-rom-variants",
+          "title": "NM-ROM variants and extensions",
+          "blurb": "Other architectures or training tricks for the autoencoder-decoder half of NM-ROM.",
+          "papers": [
+            {
+              "slug": "xu-duraisamy-2020",
+              "title": "Multi-level convolutional autoencoder networks for parametric prediction of spatio-temporal dynamics",
+              "authors": "Jiayang Xu, Karthik Duraisamy",
+              "year": 2020,
+              "venue": "Computer Methods in Applied Mechanics and Engineering",
+              "citations": 166,
+              "doi": "10.1016/j.cma.2020.113379",
+              "arxiv": "2003.10817",
+              "pdf": "pdfs/B-relevant/nm-rom-variants/xu-duraisamy-2020.pdf",
+              "summary": "Multi-level autoencoders for ROM. Xu and Duraisamy train several convolutional autoencoders at different latent dimensions arranged in a hierarchy: coarse latent codes capture dominant modes, fine latent codes capture residual structure. At inference the hierarchy can be evaluated partially — you pay for only as much latent resolution as the query requires. The idea borrows from multi-resolution image compression. They demonstrate on 2D transonic airfoil flow and heat conduction. For your paper this is an example of 'decoder-side scale-up without retraining', comparable to Diaz et al.'s domain-decomposition scale-up and to your CP-tensor's axis-wise factorisation. Cite when you want one example of the hierarchy-of-autoencoders thread.",
+              "closed_access": false
+            },
+            {
+              "slug": "kadeethum-et-al-2022",
+              "title": "Non-intrusive reduced order modeling of natural convection in porous media using convolutional autoencoders",
+              "authors": "Teeratorn Kadeethum, Francesco Ballarin, Youngsoo Choi, Daniel O'Malley, Hongkyu Yoon, Nikolaos Bouklas",
+              "year": 2022,
+              "venue": "Advances in Water Resources",
+              "citations": 65,
+              "doi": "10.1016/j.advwatres.2021.104098",
+              "arxiv": "2110.15255",
+              "pdf": "pdfs/B-relevant/nm-rom-variants/kadeethum-et-al-2022.pdf",
+              "summary": "A careful empirical comparison of CAE-NM-ROM against linear POD on a porous-media natural-convection benchmark. Kadeethum et al. train a convolutional autoencoder to compress snapshots of the Rayleigh number → flow-field map and evaluate non-intrusive ROM accuracy as a function of latent dimension. They find CAE-based NM-ROM dominates POD when the flow transitions between convection regimes (i.e. the solution manifold is advection-dominated), but POD wins at low Rayleigh number where the manifold is nearly linear. Useful as a citation for 'when does NM-ROM actually help over POD' — which is a question reviewers sometimes press. The paper is also one of the first industrial-ish benchmarks for NM-ROM rather than a pure-math test problem.",
+              "closed_access": false
+            },
+            {
+              "slug": "botteghi-glas-brune-2026",
+              "title": "Deep Invertible Autoencoders for Dimensionality Reduction of Dynamical Systems",
+              "authors": "Nicolò Botteghi, Silke Glas, Christoph Brune",
+              "year": 2026,
+              "venue": "arXiv preprint",
+              "citations": 0,
+              "doi": "10.48550/arxiv.2411.10920",
+              "arxiv": "2411.10920",
+              "pdf": "pdfs/B-relevant/nm-rom-variants/botteghi-glas-brune-2026.pdf",
+              "summary": "Recent-vintage paper aligned with your Jacobian-regularity thesis. Botteghi, Glas, and Brune argue that for ROM purposes the encoder-decoder pair should be *invertible* in a constructive sense, which controls the decoder Jacobian and in particular prevents latent collapse — the pathology where several latent codes map to nearly the same reconstructed field. They use invertible residual networks (coupling-layer architectures from normalising-flow literature) as the autoencoder. The win is a decoder whose Jacobian has guaranteed full column rank everywhere, exactly the property your linear-skip CP decoder also enforces but via a different architectural device. You should cite this as an independent recent argument that 'decoder Jacobian matters more than reconstruction error,' and differentiate that your CP structure also gives EQ-compatibility which invertible nets do not.",
+              "closed_access": false
+            },
+            {
+              "slug": "buchfink-glas-haasdonk-unger-2024",
+              "title": "Model reduction on manifolds: A differential geometric framework",
+              "authors": "Patrick Buchfink, Silke Glas, Bernard Haasdonk, Benjamin Unger",
+              "year": 2024,
+              "venue": "Physica D",
+              "citations": 9,
+              "doi": "10.1016/j.physd.2024.134299",
+              "arxiv": "2312.01963",
+              "pdf": "pdfs/B-relevant/nm-rom-variants/buchfink-glas-haasdonk-unger-2024.pdf",
+              "summary": "The theory paper for manifold-based ROM. Buchfink et al. reformulate nonlinear-manifold MOR in the language of differential geometry: the solution manifold is a submanifold of the FOM state space, the decoder is a smooth embedding, the reduction is a projection onto the tangent space, and the reduced dynamics live on the manifold rather than on its chart. They give a principled account of when the reduced dynamics preserve structural properties of the FOM (symplecticity, passivity) and which choices of chart, projection, and metric pair up consistently. No empirics; no new decoder. This is the right citation for your theory/setup section if you want a rigorous geometric definition of 'nonlinear manifold ROM' rather than an operational one — particularly useful if a reviewer asks whether your ROM preserves anything structure-wise.",
+              "closed_access": false
+            }
+          ]
+        },
+        {
+          "id": "graph-meshfree",
+          "title": "Graph / mesh-free decoders",
+          "blurb": "When your domain is unstructured, CAE decoders don't apply — the field uses graph autoencoders instead.",
+          "papers": [
+            {
+              "slug": "pichi-moya-hesthaven-2024",
+              "title": "A graph convolutional autoencoder approach to model order reduction for parametrized PDEs",
+              "authors": "Federico Pichi, Beatriz Moya, Jan S. Hesthaven",
+              "year": 2024,
+              "venue": "Journal of Computational Physics",
+              "citations": 62,
+              "doi": "10.1016/j.jcp.2024.112762",
+              "arxiv": "2305.08573",
+              "pdf": "pdfs/B-relevant/graph-meshfree/pichi-moya-hesthaven-2024.pdf",
+              "summary": "The graph-autoencoder counterpart to CAE-NM-ROM. Pichi, Moya, and Hesthaven observe that convolutional autoencoders require a structured Cartesian grid — a fatal restriction for industrial finite-element meshes, which are unstructured. They replace the CAE with a graph convolutional autoencoder (message-passing layers on the mesh graph) so that the method applies to any FEM mesh without resampling. Training uses the FEM mass matrix as the reconstruction-loss metric rather than naive Euclidean, which is essential for non-uniform meshes. Benchmarks on Stokes, Navier–Stokes, and nonlinear elasticity show the graph-autoencoder matches CAE accuracy on structured grids and extends cleanly to unstructured ones. Your paper uses Cartesian grids so this is not a direct competitor, but cite it when you discuss mesh-agnostic extensions in the outlook / future-work section.",
+              "closed_access": false
+            }
+          ]
+        },
+        {
+          "id": "hyper-reduction-classics",
+          "title": "Hyper-reduction classics (methods section)",
+          "blurb": "Foundational hyper-reduction methods your sample-node EQ descends from. Closed-access — link-only.",
+          "papers": [
+            {
+              "slug": "farhat-avery-chapman-cortial-2014",
+              "title": "Dimensional reduction of nonlinear finite element dynamic models with finite rotations and energy-based mesh sampling and weighting for computational efficiency",
+              "authors": "Charbel Farhat, Philip Avery, Todd Chapman, Julien Cortial",
+              "year": 2014,
+              "venue": "Int. J. Numer. Meth. Engng",
+              "citations": 400,
+              "doi": "10.1002/nme.4671",
+              "summary": "The paper that introduced ECSW — Energy-Conserving Sampling and Weighting — a hyper-reduction scheme tailored to finite-element dynamic models. Farhat et al. observe that DEIM and gappy POD work on discrete vector-field snapshots but do not naturally preserve the energy-conservation structure of FEM equations of motion. ECSW instead selects a sparse set of elements and learns weights for them such that the reduced internal-force vector matches the full internal-force vector over the training snapshots in a positive-weights least-squares sense. The positivity constraint guarantees that energy conservation is preserved by the reduction. On nonlinear structural dynamics with finite rotations ECSW beats DEIM both in accuracy and in robustness. For your paper this is the structural-mechanics counterpart of the sample-node selection in your NM-ROM and a citation in the methods section whenever you say 'energy-conserving hyper-reduction.'",
+              "closed_access": true
+            },
+            {
+              "slug": "negri-manzoni-amsallem-2015",
+              "title": "Efficient model reduction of parametrized systems by matrix discrete empirical interpolation",
+              "authors": "Federico Negri, Andrea Manzoni, David Amsallem",
+              "year": 2015,
+              "venue": "Journal of Computational Physics",
+              "citations": 145,
+              "doi": "10.1016/j.jcp.2015.09.046",
+              "summary": "The matrix-DEIM (MDEIM) paper. Negri, Manzoni, and Amsallem extend DEIM to parametric matrix assembly: for PDEs where the Jacobian matrix itself depends nonlinearly on parameters (e.g. nonlinear reaction, nonlinear diffusion), they apply DEIM not to snapshots of the nonlinear force vector but to snapshots of the assembled system matrix. The algorithm selects a small set of matrix entries to evaluate and approximates the rest via a low-rank basis. This makes online assembly of the reduced Jacobian O(sample size) rather than O(FOM dimension). The method is important in your methods section because your NM-ROM needs Jacobian rows at sample nodes, and MDEIM is the canonical citation for matrix-level hyper-reduction. Cite alongside DEIM whenever you motivate your sampling strategy.",
+              "closed_access": true
+            },
+            {
+              "slug": "yano-patera-2019",
+              "title": "An LP empirical quadrature procedure for reduced basis treatment of parametrized nonlinear PDEs",
+              "authors": "Masayuki Yano, Anthony T. Patera",
+              "year": 2019,
+              "venue": "Computer Methods in Applied Mechanics and Engineering",
+              "citations": 100,
+              "doi": "10.1016/j.cma.2018.02.028",
+              "summary": "The paper that introduced the 'empirical quadrature' (EQ) framing your paper's acronym borrows from. Yano and Patera pose hyper-reduction as a linear program: find the minimum number of quadrature points and positive weights such that the reduced integral of each training-snapshot residual matches the full integral to a prescribed tolerance. The LP formulation is stable, deterministic (unlike greedy DEIM), and yields a sparse, non-negatively-weighted quadrature rule that mimics the FEM integration structure. Your sample-node EQ in NM-ROM is descended from this scheme; this is the correct citation when you say 'empirical quadrature' in methods rather than the general DEIM citation. Pair with Chaturantabut–Sorensen 2010 for the DEIM origin and with ECSW for the structural-mechanics variant.",
+              "closed_access": true
+            },
+            {
+              "slug": "carlberg-tuminaro-boggs-2015",
+              "title": "Preserving Lagrangian Structure in Nonlinear Model Reduction with Application to Structural Dynamics",
+              "authors": "Kevin Carlberg, Ray Tuminaro, Paul Boggs",
+              "year": 2015,
+              "venue": "SIAM Journal on Scientific Computing",
+              "citations": 88,
+              "doi": "10.1137/140959602",
+              "summary": "Structure-preserving linear-subspace ROM for Lagrangian systems. Carlberg, Tuminaro, and Boggs observe that applying LSPG or Galerkin projection to the second-order ODE form of a Lagrangian system destroys its variational structure — the reduced model is no longer derivable from a reduced Lagrangian. They instead reduce the Lagrangian itself, which guarantees that the reduced model is also Lagrangian and inherits energy conservation and symplectic time-integration maps. The paper is closed-access but important to cite in your related-work when you acknowledge 'structure-preserving ROM' as an orthogonal concern to your Jacobian-regularity argument — both are constraints on how the reduction is done, but at different levels (energy vs. Jacobian conditioning).",
+              "closed_access": true
+            }
+          ]
+        },
+        {
+          "id": "dl-roms",
+          "title": "Deep-learning ROMs (broader)",
+          "blurb": "Additional DL-ROM-family papers that commonly appear in related-work tables.",
+          "papers": [
+            {
+              "slug": "cicci-fresca-manzoni-2022",
+              "title": "Deep-HyROMnet: A Deep Learning-Based Operator Approximation for Hyper-Reduction of Nonlinear Parametrized PDEs",
+              "authors": "Ludovica Cicci, Stefania Fresca, Andrea Manzoni",
+              "year": 2022,
+              "venue": "Journal of Scientific Computing",
+              "citations": 34,
+              "doi": "10.1007/s10915-022-02001-8",
+              "arxiv": "2202.02658",
+              "pdf": "pdfs/B-relevant/dl-roms/cicci-fresca-manzoni-2022.pdf",
+              "summary": "Deep-HyROMnet: use a neural network to learn the reduced nonlinear operator directly, replacing the sampling-based hyper-reduction step. Cicci, Fresca, and Manzoni observe that DEIM/MDEIM add a brittle sampling layer to POD–Galerkin ROMs; instead they train an MLP to map the reduced state z to the reduced nonlinear force vector f_r(z). This is a learned hyper-reduction. The advantage is that online evaluation is a single forward pass independent of any sample-node structure; the disadvantage is that it loses the physical interpretability and a-priori-bound story of empirical-interpolation methods. For your paper this is a useful contrast: your NM-ROM keeps sample-based hyper-reduction for physics fidelity but keeps the cost low via CP-tensor structure. Deep-HyROMnet takes the opposite bargain.",
+              "closed_access": false
+            },
+            {
+              "slug": "franco-manzoni-zunino-2023",
+              "title": "A deep learning approach to Reduced Order Modelling of parameter dependent partial differential equations",
+              "authors": "Nicola Rares Franco, Andrea Manzoni, Paolo Zunino",
+              "year": 2023,
+              "venue": "Mathematics of Computation",
+              "citations": 43,
+              "doi": "10.1090/mcom/3781",
+              "arxiv": "2103.06183",
+              "pdf": "pdfs/B-relevant/dl-roms/franco-manzoni-zunino-2023.pdf",
+              "summary": "The theoretical companion to Fresca–Manzoni DL-ROM. Franco, Manzoni, and Zunino prove approximation-theoretic guarantees for a deep-network surrogate of the parameter-to-solution map of parametrized PDEs: if the solution manifold has bounded complexity (Kolmogorov n-width decays at a certain rate) there exists a deep network of polynomial size that approximates the map to any accuracy, and training this network to that accuracy is statistically tractable with polynomial sample complexity. The paper does not propose a new architecture; it certifies that DL-ROM approaches are well-founded. Cite it when you need a 'there are universal-approximation-style guarantees for DL-ROM' citation — often useful in the related-work to concede that the non-intrusive alternative has a proper theoretical footing, before arguing that practical-accuracy-under-fixed-budget is where NM-ROM wins.",
+              "closed_access": false
+            },
+            {
+              "slug": "dal-santo-deparis-pegolotti-2020",
+              "title": "Data driven approximation of parametrized PDEs by reduced basis and neural networks",
+              "authors": "Niccolò Dal Santo, Simone Deparis, Luca Pegolotti",
+              "year": 2020,
+              "venue": "Journal of Computational Physics",
+              "citations": 66,
+              "doi": "10.1016/j.jcp.2020.109550",
+              "arxiv": "1904.01514",
+              "pdf": "pdfs/B-relevant/dl-roms/dal-santo-deparis-pegolotti-2020.pdf",
+              "summary": "An early and often-cited hybrid between classical reduced-basis methods and neural-network regression. Dal Santo, Deparis, and Pegolotti use a standard POD–Galerkin reduced basis to compress the solution, and train a neural network to regress the reduced coefficients directly from the PDE parameters — skipping the online Galerkin solve entirely. The network is fed features engineered from the PDE parameter vector rather than the raw parameter. The paper's contribution is empirical: when is a trained regression network comparable to a reduced-basis online solve? They find it wins at very high query throughput (real-time inference) but fails at extrapolation beyond the training parameter range. Cite as an early non-intrusive baseline. The paper predates DL-ROM and is one of the first to argue that 'ML + ROM' is a legitimate combination in numerical-analysis venues.",
+              "closed_access": false
+            },
+            {
+              "slug": "chen-wang-hesthaven-zhang-2021",
+              "title": "Physics-informed machine learning for reduced-order modeling of nonlinear problems",
+              "authors": "Wenqian Chen, Qian Wang, Jan S. Hesthaven, Chuhua Zhang",
+              "year": 2021,
+              "venue": "Journal of Computational Physics",
+              "citations": 229,
+              "doi": "10.1016/j.jcp.2021.110666",
+              "arxiv": "2011.11750",
+              "pdf": "pdfs/B-relevant/dl-roms/chen-wang-hesthaven-zhang-2021.pdf",
+              "summary": "Physics-informed regression for reduced-basis ROM. Chen, Wang, Hesthaven, and Zhang train a feed-forward network that maps (t, μ) to the reduced coefficients, but add a residual-loss term: the reduced-PDE residual evaluated at the network's output must also be small. The combination — supervised loss on reduced coefficients plus physics loss on the reduced residual — yields networks that extrapolate better than pure-supervised regression and that converge with less training data. For your paper this is the 'weak-physics' contrast: they enforce the reduced PDE at training time; you enforce it at inference time (via the latent Gauss–Newton solve). The training-time version is faster online; the inference-time version is more robust out-of-distribution. Important related-work citation because it is cited widely in the PINN-meets-ROM intersection.",
+              "closed_access": false
+            },
+            {
+              "slug": "maulik-mohan-lusch-madireddy-balaprakash-2020",
+              "title": "Time-series learning of latent-space dynamics for reduced-order model closure",
+              "authors": "Romit Maulik, Arvind Mohan, Bethany Lusch, Sandeep Madireddy, Prasanna Balaprakash",
+              "year": 2020,
+              "venue": "Physica D",
+              "citations": 126,
+              "doi": "10.1016/j.physd.2020.132368",
+              "arxiv": "1906.07815",
+              "pdf": "pdfs/B-relevant/dl-roms/maulik-mohan-lusch-madireddy-balaprakash-2020.pdf",
+              "summary": "Closure modelling for ROMs via latent-space LSTMs. Maulik et al. observe that POD–Galerkin ROMs with a truncated basis suffer from unresolved-mode closure errors: the neglected POD modes exert stress on the retained ones that the Galerkin reduction misses. They train an LSTM on FOM snapshot data to predict this closure term as a function of the retained-mode trajectory. At online time the ROM integrates the POD–Galerkin reduced ODEs augmented by the learned closure. The paper matters for your related-work because it represents a third philosophy besides 'project harder' (NM-ROM) and 'replace with regression' (DL-ROM): 'project then correct.' It is less directly comparable to your method but a reviewer may ask about closure modelling. Cite briefly.",
+              "closed_access": false
+            },
+            {
+              "slug": "guo-manzoni-amendt-conti-hesthaven-2021",
+              "title": "Multi-fidelity regression using artificial neural networks: Efficient approximation of parameter-dependent output quantities",
+              "authors": "Mengwu Guo, Andrea Manzoni, Maurice Amendt, Paolo Conti, Jan S. Hesthaven",
+              "year": 2021,
+              "venue": "Computer Methods in Applied Mechanics and Engineering",
+              "citations": 120,
+              "doi": "10.1016/j.cma.2021.114378",
+              "arxiv": "2102.13403",
+              "pdf": "pdfs/B-relevant/dl-roms/guo-manzoni-amendt-conti-hesthaven-2021.pdf",
+              "summary": "Multi-fidelity regression for ROM-compatible outputs of interest (QoIs). Guo et al. address the common situation where high-fidelity simulations are expensive but a cheap low-fidelity simulator exists (coarse mesh, linearised physics, or a prior POD–Galerkin ROM). They train a neural network on a small number of HF samples that learns the HF-to-LF residual as a function of parameter, yielding an HF-accurate surrogate from LF-cost simulations plus a small HF budget. The method is orthogonal to NM-ROM but frequently cited together: if your NM-ROM is the LF component in a multi-fidelity scheme you can bolt an HF-correction network on top. For your paper, relevant only if you discuss multi-fidelity outlook or UQ in the conclusions.",
+              "closed_access": false
+            },
+            {
+              "slug": "fresca-gobat-fedeli-frangi-manzoni-2022",
+              "title": "Deep learning-based reduced order models for the real-time simulation of the nonlinear dynamics of microstructures",
+              "authors": "Stefania Fresca, Giorgio Gobat, Patrick Fedeli, Attilio Frangi, Andrea Manzoni",
+              "year": 2022,
+              "venue": "International Journal for Numerical Methods in Engineering",
+              "citations": 41,
+              "doi": "10.1002/nme.7054",
+              "arxiv": "2203.00710",
+              "pdf": "pdfs/B-relevant/dl-roms/fresca-gobat-fedeli-frangi-manzoni-2022.pdf",
+              "summary": "An industrial deployment of DL-ROM for the real-time simulation of MEMS-scale mechanical microstructures with inertia and geometric nonlinearities. Fresca et al. first build a POD–Galerkin ROM offline to generate a dense training set that covers the parameter range of interest, then train a DL-ROM (CAE + regression network) on the ROM snapshots rather than FOM snapshots. The resulting surrogate runs at sub-millisecond latency per parameter query, suitable for embedded hardware. The paper matters for your related-work as the example of DL-ROM crossing into production — when reviewers ask 'who actually ships these methods' this is a good citation. For methods it is POD-DL-ROM applied in a specific engineering domain; not a new algorithmic contribution.",
+              "closed_access": false
+            }
+          ]
+        },
+        {
+          "id": "latent-dynamics-conservation",
+          "title": "Structure-preserving / conservation",
+          "blurb": "Latent-space methods that enforce physical conservation laws.",
+          "papers": [
+            {
+              "slug": "lee-carlberg-2021-deep-conservation",
+              "title": "Deep Conservation: A Latent-Dynamics Model for Exact Satisfaction of Physical Conservation Laws",
+              "authors": "Kookjin Lee, Kevin Carlberg",
+              "year": 2021,
+              "venue": "AAAI",
+              "citations": 18,
+              "doi": "10.1609/aaai.v35i1.16102",
+              "arxiv": "1912.01302",
+              "pdf": "pdfs/B-relevant/latent-dynamics-conservation/lee-carlberg-2021-deep-conservation.pdf",
+              "summary": "Lee and Carlberg's follow-up to the 2020 NM-ROM paper. They combine a convolutional-autoencoder manifold with a latent dynamics model trained to *exactly* satisfy specified conservation laws — mass, momentum, energy — via a constrained optimisation problem at every latent time step. The constraint is enforced as a projection onto the conservation-law-feasible subset of the latent manifold. Benchmarks on shock-dominated Euler demonstrate that the method preserves total mass/momentum/energy to machine precision over long time horizons, whereas unconstrained DL-ROMs drift. For your paper this is important as 'what Carlberg did after NM-ROM' and an example of bolting structure-preservation onto a learned manifold. Your CP-tensor decoder does not enforce conservation — cite this when a reviewer presses on conservation.",
+              "closed_access": false
+            },
+            {
+              "slug": "gruber-tezaur-2023",
+              "title": "Canonical and noncanonical Hamiltonian operator inference",
+              "authors": "Anthony Gruber, Irina Tezaur",
+              "year": 2023,
+              "venue": "Computer Methods in Applied Mechanics and Engineering",
+              "citations": 22,
+              "doi": "10.1016/j.cma.2023.116334",
+              "arxiv": "2304.06262",
+              "pdf": "pdfs/B-relevant/latent-dynamics-conservation/gruber-tezaur-2023.pdf",
+              "summary": "Structure-preserving operator inference. Gruber and Tezaur extend operator inference — a non-intrusive ROM method that fits polynomial ODEs to snapshot data — to enforce Hamiltonian structure on the identified ODEs, both in the canonical (symplectic) and noncanonical (Poisson-structured) settings. The trick is to parameterise the identified ODE in a form that automatically satisfies the Hamiltonian structural constraints (antisymmetric matrix product structure for canonical; Poisson bracket compatibility for noncanonical) and fit only the free parameters. Resulting ROMs have exactly-conserved Hamiltonian and, for canonical systems, exactly-symplectic time evolution under a symplectic integrator. Cite in your related work alongside Lee–Carlberg 2021 and Carlberg–Tuminaro–Boggs 2015 when you acknowledge structure-preserving ROM as a complementary research programme.",
+              "closed_access": false
+            }
+          ]
+        },
+        {
+          "id": "registration-transport",
+          "title": "Registration / transport-based ROMs",
+          "blurb": "Alternative Kolmogorov-barrier fix: move grid points with the flow rather than learn a manifold in Euclidean space.",
+          "papers": [
+            {
+              "slug": "barral-taddei-tifouti-2023",
+              "title": "Registration-based model reduction of parameterized PDEs with spatio-parameter adaptivity",
+              "authors": "Nicolas Barral, Tommaso Taddei, Ishak Tifouti",
+              "year": 2023,
+              "venue": "Journal of Computational Physics",
+              "citations": 13,
+              "doi": "10.1016/j.jcp.2023.112727",
+              "arxiv": "2303.03736",
+              "pdf": "pdfs/B-relevant/registration-transport/barral-taddei-tifouti-2023.pdf",
+              "summary": "A non-neural competitor to NM-ROM for advection-dominated problems. Barral, Taddei, and Tifouti register training snapshots onto a reference configuration via a learned diffeomorphism of the spatial domain — the 'registration' — so that the registered snapshots live in a low-dimensional linear subspace even though the originals do not. Online, given a new parameter, an ROM predicts both the registered solution and the appropriate diffeomorphism, and composing them recovers the field in the physical grid. This is the transport-based counterpart of NM-ROM's learned-manifold trick. The paper extends the original Taddei registration line with spatio-parameter adaptive refinement. Cite in related work as 'registration-based ROM' — an important non-ML alternative that NM-ROM papers sometimes omit.",
+              "closed_access": false
+            },
+            {
+              "slug": "cucchiara-iollo-taddei-telib-2024",
+              "title": "Model order reduction by convex displacement interpolation",
+              "authors": "Simona Cucchiara, Angelo Iollo, Tommaso Taddei, Haysam Telib",
+              "year": 2024,
+              "venue": "Journal of Computational Physics",
+              "citations": 11,
+              "doi": "10.1016/j.jcp.2024.113230",
+              "arxiv": "2402.18748",
+              "pdf": "pdfs/B-relevant/registration-transport/cucchiara-iollo-taddei-telib-2024.pdf",
+              "summary": "Optimal-transport-based ROM. Cucchiara, Iollo, Taddei, and Telib interpolate the training snapshots via convex combinations of displacement maps rather than pixel-wise convex combinations. Given a new parameter, they construct an interpolating displacement from the training-set displacements, apply it to the reference snapshot, and recover the new solution. The method requires no Galerkin projection and no autoencoder; it is pure data-driven optimal transport. On shock-dominated benchmarks it beats linear POD substantially. Your paper should cite this under the 'transport-based methods' umbrella in related work as a non-projection, non-learning alternative to NM-ROM for advection-dominated PDEs. Important for a NeurIPS audience because it shows that the Kolmogorov-barrier problem is not uniquely a machine-learning problem.",
+              "closed_access": false
+            }
+          ]
+        },
+        {
+          "id": "neural-operators",
+          "title": "Neural operators (further)",
+          "blurb": "Additional neural-operator papers reviewers commonly ask about.",
+          "papers": [
+            {
+              "slug": "li-pino-2024",
+              "title": "Physics-Informed Neural Operator for Learning Partial Differential Equations",
+              "authors": "Zongyi Li, Hongkai Zheng, Nikola Kovachki, David Jin, Haoxuan Chen, Burigede Liu, Kamyar Azizzadenesheli, Anima Anandkumar",
+              "year": 2024,
+              "venue": "ACM/IMS Journal of Data Science",
+              "citations": 204,
+              "doi": "10.1145/3648506",
+              "arxiv": "2111.03794",
+              "pdf": "pdfs/B-relevant/neural-operators/li-pino-2024.pdf",
+              "summary": "Physics-Informed Neural Operator (PINO) — the physics-augmented version of FNO. Li et al. combine the FNO architecture with a residual loss that enforces the PDE at a higher resolution than the training data. The combination of low-resolution supervised learning with high-resolution physics constraints produces an operator that generalises to unseen PDE parameters better than FNO and is more sample-efficient. The key insight is that FNO's Fourier discretisation is exactly the right grid to evaluate the PDE residual on, so physics enforcement is free to add. Your paper must cite this alongside FNO when it positions against neural operators, because PINO is the most serious neural-operator baseline for parametric PDE generalisation. Note however that PINO is still one-shot (no online solver) whereas NM-ROM is projection-based.",
+              "closed_access": false
+            },
+            {
+              "slug": "raonic-cno-2023",
+              "title": "Convolutional Neural Operators for robust and accurate learning of PDEs",
+              "authors": "Bogdan Raonić, Roberto Molinaro, Tim De Ryck, Tobias Rohner, Francesca Bartolucci, Rima Alaifari, Siddhartha Mishra, Emmanuel de Bézenac",
+              "year": 2023,
+              "venue": "NeurIPS",
+              "citations": 37,
+              "doi": "10.48550/arxiv.2302.01178",
+              "arxiv": "2302.01178",
+              "pdf": "pdfs/B-relevant/neural-operators/raonic-cno-2023.pdf",
+              "summary": "Convolutional Neural Operators (CNOs) — a discretisation-consistent reformulation of CNN-based PDE surrogates. Raonić et al. identify that naive CNNs break the continuous-operator abstraction: they treat the input as a finite tensor and cannot be re-discretised at inference without retraining. They redesign the architecture — careful up/downsampling with anti-aliasing, handling of boundary conditions, explicit evaluation on a continuum-approximating grid — so that the trained network consistently approximates a continuous operator regardless of discretisation. Benchmarks on Navier–Stokes, Darcy, and allen-cahn show CNOs match or beat FNO while being more robust to grid changes. For your paper this is a relevant recent neural-operator entry, and a useful citation in a NeurIPS-audience intro because it appeared at NeurIPS 2023 and reviewers may know it.",
+              "closed_access": false
+            },
+            {
+              "slug": "nelsen-stuart-2024",
+              "title": "Operator Learning Using Random Features: A Tool for Scientific Computing",
+              "authors": "Nicholas H. Nelsen, Andrew M. Stuart",
+              "year": 2024,
+              "venue": "SIAM Review",
+              "citations": 14,
+              "doi": "10.1137/24m1648703",
+              "arxiv": "2408.06526",
+              "pdf": "pdfs/B-relevant/neural-operators/nelsen-stuart-2024.pdf",
+              "summary": "Random-features operator learning — a classical-ML alternative to deep neural operators. Nelsen and Stuart extend Rahimi–Recht random Fourier features from scalar regression to function-valued regression, yielding an operator-learning method that is (a) linear in its trainable parameters (hence convex training), (b) admits closed-form error bounds, and (c) is competitive with FNO on many benchmarks despite having far fewer parameters. The paper is well-positioned as the 'principled baseline' for the neural-operator literature and has appeared in SIAM Review, giving it numerical-analysis legitimacy. For your paper it matters as an accessible, theoretically-grounded non-deep-learning neural-operator baseline — useful when you want to argue that 'your win is not deep-learning-specific' or when reviewers ask about simple baselines.",
+              "closed_access": false
+            },
+            {
+              "slug": "goswami-kontolati-shields-karniadakis-2022",
+              "title": "Deep transfer operator learning for partial differential equations under conditional shift",
+              "authors": "Somdatta Goswami, Katiana Kontolati, Michael D. Shields, George Em Karniadakis",
+              "year": 2022,
+              "venue": "Nature Machine Intelligence",
+              "citations": 111,
+              "doi": "10.1038/s42256-022-00569-2",
+              "arxiv": "2204.09810",
+              "pdf": "pdfs/B-relevant/neural-operators/goswami-kontolati-shields-karniadakis-2022.pdf",
+              "summary": "Transfer-learning for neural operators. Goswami, Kontolati, Shields, and Karniadakis address the common practical problem that a trained DeepONet/FNO on one distribution of PDE parameters fails under distribution shift (new BCs, new forcing regimes, new geometries). They propose a transfer-learning scheme — freeze the branch network, retrain only the trunk network on a small target-distribution dataset — and derive when this suffices. The paper appears in a high-visibility venue (Nature Machine Intelligence) and is heavily cited in the 'neural operators for new regimes' thread. For your paper it is relevant only if you discuss generalisation across distributions explicitly, but it is a standard citation in neural-operator related work sections and worth listing as such.",
+              "closed_access": false
+            }
+          ]
+        },
+        {
+          "id": "weather-climate",
+          "title": "Weather / climate PDE surrogates",
+          "blurb": "Large-scale ViT- and operator-based PDE surrogates. Adjacent field, occasionally cited for context.",
+          "papers": [
+            {
+              "slug": "pathak-fourcastnet-2022",
+              "title": "FourCastNet: A Global Data-driven High-resolution Weather Model using Adaptive Fourier Neural Operators",
+              "authors": "Jaideep Pathak, Shashank Subramanian, Peter Harrington, Sanjeev Raja, Ashesh Chattopadhyay, Morteza Mardani, Thorsten Kurth, David Hall, Zongyi Li, Kamyar Azizzadenesheli, Pedram Hassanzadeh, Karthik Kashinath, Animashree Anandkumar",
+              "year": 2022,
+              "venue": "arXiv / PASC 2023",
+              "citations": 172,
+              "doi": "10.1145/3592979.3593412",
+              "arxiv": "2202.11214",
+              "pdf": "pdfs/B-relevant/weather-climate/pathak-fourcastnet-2022.pdf",
+              "summary": "FourCastNet — a global-scale ViT-plus-AFNO surrogate for the atmospheric PDE. Pathak et al. train a vision-transformer-style architecture with adaptive Fourier neural operator layers on ERA5 reanalysis data, learning to roll forward global weather variables at 0.25° resolution in six-hour steps. The trained model matches the ECMWF integrated forecasting system on several variables at a fraction of the runtime. The paper is tangential to your NM-ROM but is the most prominent example of a ViT-based PDE surrogate in a production setting. Relevant as evidence that ViT encoders scale to real PDEs — which is what your encoder does, in miniature — and as a citation in the intro if you need to point to a large-scale success story for deep-learning PDE surrogates.",
+              "closed_access": false
+            },
+            {
+              "slug": "nguyen-climax-2023",
+              "title": "ClimaX: A foundation model for weather and climate",
+              "authors": "Tung Nguyen, Johannes Brandstetter, Ashish Kapoor, Jayesh K. Gupta, Aditya Grover",
+              "year": 2023,
+              "venue": "ICML",
+              "citations": 168,
+              "doi": "10.48550/arxiv.2301.10343",
+              "arxiv": "2301.10343",
+              "pdf": "pdfs/B-relevant/weather-climate/nguyen-climax-2023.pdf",
+              "summary": "ClimaX — a ViT pre-trained on multi-variable climate-model output, fine-tuned for diverse downstream tasks (forecasting, downscaling, climate projection). Nguyen et al. argue that the 'foundation-model' paradigm — large pretraining followed by task-specific finetuning — applies to atmospheric PDE surrogates and scales well. They introduce a variable-aware attention mechanism that handles heterogeneous multi-variable inputs. The paper is more useful for its framing than its algorithm: it is the clearest statement of 'large pretrained ViTs are general-purpose PDE surrogates.' For your paper it is an outer reference that shows ViT encoders have become a standard tool for scientific ML — which is the context in which your ViT-encoder + CP-decoder architecture sits. Cite briefly in intro, not in core related work.",
+              "closed_access": false
+            }
+          ]
+        },
+        {
+          "id": "geometric-mor",
+          "title": "Geometric / subspace-update MOR",
+          "blurb": "Theory-leaning works on adaptive linear subspaces — classical precursor to NM-ROM.",
+          "papers": [
+            {
+              "slug": "zimmermann-peherstorfer-willcox-2018",
+              "title": "Geometric Subspace Updates with Applications to Online Adaptive Nonlinear Model Reduction",
+              "authors": "Ralf Zimmermann, Benjamin Peherstorfer, Karen Willcox",
+              "year": 2018,
+              "venue": "SIAM Journal on Matrix Analysis and Applications",
+              "citations": 77,
+              "doi": "10.1137/17m1123286",
+              "arxiv": "1712.00978",
+              "pdf": "pdfs/B-relevant/geometric-mor/zimmermann-peherstorfer-willcox-2018.pdf",
+              "summary": "Online subspace adaptation via Riemannian optimisation on the Grassmann manifold. Zimmermann, Peherstorfer, and Willcox address the problem that a fixed POD basis stops being accurate when the online dynamics drift out of the span of training snapshots. Rather than retraining a full POD basis, they update the basis locally via a rank-one or rank-low Grassmann step that drives the current-iteration least-squares residual to zero exactly. The update is O(N k²) per step where k is the basis size, and preserves orthonormality. For your paper, relevant as an example of 'adapt linearly rather than re-learn manifold' — the classical-ROM alternative to NM-ROM's 'learn a richer manifold once.' Cite in related work when you discuss the spectrum of options from pure linear subspaces through adaptive subspaces to full nonlinear manifolds.",
+              "closed_access": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

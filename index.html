@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NM-ROM Literature — Reading Room</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>NM-ROM Literature</h1>
+    <p class="tag">Curated reading room for the ViT + LinearCP NM-ROM paper · organized by Section A (must-cite) and Section B (relevant).</p>
+    <input id="search" type="search" placeholder="Search title, author, year, keyword…" autocomplete="off">
+    <p id="counts" class="counts"></p>
+  </div>
+</header>
+
+<main class="wrap">
+  <nav id="toc"></nav>
+  <section id="content"></section>
+</main>
+
+<aside id="reader" class="hidden">
+  <div class="reader-head">
+    <button id="reader-close" aria-label="Close">×</button>
+    <div>
+      <h2 id="reader-title"></h2>
+      <p id="reader-meta"></p>
+    </div>
+    <div class="reader-actions">
+      <a id="reader-doi" target="_blank" rel="noopener">DOI</a>
+      <a id="reader-arxiv" target="_blank" rel="noopener">arXiv</a>
+      <a id="reader-pdf" target="_blank" rel="noopener">Open PDF</a>
+    </div>
+  </div>
+  <div class="reader-body">
+    <div id="reader-summary"></div>
+    <iframe id="reader-frame" title="PDF"></iframe>
+  </div>
+</aside>
+
+<footer><div class="wrap"><p>Built <span id="built"></span>. <a href="https://github.com/tahmidawal/NMROM-Papers">Source on GitHub</a>.</p></div></footer>
+
+<script src="app.js"></script>
+</body>
+</html>
