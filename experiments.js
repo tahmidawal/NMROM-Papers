@@ -29,8 +29,8 @@
       .join("");
 
     const actions = [];
-    if (p.pdf) actions.push(`<a href="${p.pdf}" target="_blank" rel="noopener">Open PDF</a>`);
-    actions.push(`<a href="index.html#cat-A-foundation">↩ Back to reading room</a>`);
+    if (p.pdf) actions.push(`<a href="${p.pdf}" class="open-pdf" data-pdf="${p.pdf}" data-title="${escapeHTML(p.title)}">Open PDF →</a>`);
+    actions.push(`<a href="index.html">↩ Back to reading room</a>`);
 
     card.innerHTML = `
       <h2><span class="paper-num">#${idx + 1}</span>${escapeHTML(p.title)}</h2>
@@ -43,6 +43,45 @@
       <div class="actions">${actions.join("")}</div>`;
     list.appendChild(card);
   });
+
+  // Wire PDF split-view
+  const mainEl = document.querySelector(".experiments-main");
+  const pane = document.getElementById("pdf-pane");
+  const frame = document.getElementById("pdf-frame");
+  const paneTitle = document.getElementById("pdf-pane-title");
+  const openNew = document.getElementById("pdf-open-new");
+  const closeBtn = document.getElementById("pdf-close");
+
+  document.querySelectorAll("a.open-pdf").forEach((a) => {
+    a.addEventListener("click", (e) => {
+      e.preventDefault();
+      const pdf = a.dataset.pdf;
+      const title = a.dataset.title;
+      openInPane(pdf, title, a.closest(".paper-card"));
+    });
+  });
+
+  closeBtn.addEventListener("click", closePane);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && mainEl.classList.contains("with-pdf")) closePane();
+  });
+
+  function openInPane(pdf, title, cardEl) {
+    mainEl.classList.add("with-pdf");
+    pane.classList.remove("pdf-empty");
+    frame.src = pdf + "#view=FitH";
+    paneTitle.textContent = title;
+    openNew.href = pdf;
+    document.querySelectorAll(".paper-card.pdf-active").forEach((c) => c.classList.remove("pdf-active"));
+    if (cardEl) cardEl.classList.add("pdf-active");
+  }
+
+  function closePane() {
+    mainEl.classList.remove("with-pdf");
+    pane.classList.add("pdf-empty");
+    frame.src = "about:blank";
+    document.querySelectorAll(".paper-card.pdf-active").forEach((c) => c.classList.remove("pdf-active"));
+  }
 
   // Takeaways
   const takeaways = document.getElementById("takeaways");

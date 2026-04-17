@@ -19,8 +19,21 @@
 
 <main class="wrap experiments-main">
   <nav id="paper-nav"></nav>
-  <section id="paper-list"></section>
-  <section id="takeaways"></section>
+  <section id="paper-column">
+    <section id="paper-list"></section>
+    <section id="takeaways"></section>
+  </section>
+  <aside id="pdf-pane" class="pdf-empty">
+    <div class="pdf-pane-head">
+      <span id="pdf-pane-title">PDF viewer</span>
+      <div class="pdf-pane-actions">
+        <a id="pdf-open-new" href="#" target="_blank" rel="noopener" title="Open in new tab">↗</a>
+        <button id="pdf-close" title="Close">×</button>
+      </div>
+    </div>
+    <div id="pdf-empty-msg">Click <strong>Open PDF</strong> on any paper card to read it here.</div>
+    <iframe id="pdf-frame" title="PDF"></iframe>
+  </aside>
 </main>
 
 <footer><div class="wrap"><p><a href="index.html">← Back to reading room</a> · <a href="https://github.com/tahmidawal/NMROM-Papers">GitHub</a></p></div></footer>
