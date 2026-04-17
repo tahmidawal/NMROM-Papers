@@ -1,0 +1,182 @@
+{
+  "intro": {
+    "title": "The knobs: what we turn to trade accuracy for speedup",
+    "plain_english": "Our architecture (ViT encoder + LinearCP decoder + LM-Gauss-Newton online solver with empirical-quadrature hyper-reduction) exposes three tiers of knobs. Tier 1 knobs move both axes of the Pareto front — you pay speed for accuracy or vice versa. Tier 2 knobs are 'free' — they raise accuracy at essentially zero online cost because they only affect parts of the pipeline that run once per query. Tier 3 knobs shape the *decoder Jacobian*, which decides whether the Gauss-Newton solver converges from cold start — the claim our paper rests on.",
+    "how_to_read": "Each tier below lists the knob, where it lives in the code, the current setting, what happens when you turn it up or down, and why. The last section shows how to demonstrate each tier in the paper."
+  },
+  "tiers": [
+    {
+      "id": "tier1",
+      "title": "Tier 1 — Pareto knobs (trade accuracy for speedup directly)",
+      "blurb": "These are the three numbers that control the per-step online cost of the LM-Gauss-Newton solve. Every NM-ROM paper in the corpus has an equivalent set — this is the axis reviewers will look at.",
+      "knobs": [
+        {
+          "name": "N_EQ_SAMPLES",
+          "location": "nm_rom_heat_vitcp.py:300",
+          "current": "8 (aggressive FAST); 250 (conservative)",
+          "effect_up": "More quadrature nodes → residual + Jacobian evaluated on more of the mesh → lower rel-L², closer to the full PDE residual.",
+          "effect_down": "Fewer nodes → n_eq shrinks linearly (each sample contributes the 7-point stencil: center + 6 neighbors) → cheaper V_eq assembly and cheaper per-step Jacobian.",
+          "cost_model": "Online cost per GN step is O(n_eq · rank) for V_eq assembly + O(n_eq · k) for Jacobian rows. n_eq ∝ N_EQ_SAMPLES.",
+          "analog_in_corpus": "Cheung-Choi 2022 oversampling ratio λ ∈ [2,7] (Figure 9). Romor-Stabile-Rozza 2023 magic-points count ∈ [25, 150]. Diaz-Choi-Heinkenschloss 2024 100 collocation points/subdomain.",
+          "lever_size": "Primary online knob — ~30× range (8 to 250) in our own logs"
+        },
+        {
+          "name": "latent_dim (k_dim)",
+          "location": "train_heat_vitcp.py:254",
+          "current": "24 (FAST); 40 (aggressive-FAST)",
+          "effect_up": "Richer manifold → lower projection error → lower rel-L².",
+          "effect_down": "Smaller k → smaller (k+1)×(k+1) LM-GN Hessian solve → cheaper linear algebra per step. The k³ linear solve is cheap at k=24 but scales poorly.",
+          "cost_model": "GN step cost includes O(k³) Hessian solve + O(n_eq · k²) for J^T J. At k=40 the k³ term still dominates.",
+          "analog_in_corpus": "Kim-Choi 2022 sweep k ∈ {2,3,5,10,15,20}, headline k=5. Lee-Carlberg 2020 sweep k ∈ {3,5,…,50}.",
+          "lever_size": "Moderate — factor ~2 from 20 to 40 but couples to rank"
+        },
+        {
+          "name": "CP rank (RANK)",
+          "location": "train_heat_vitcp.py:255",
+          "current": "512 (FAST); 768 (aggressive-FAST)",
+          "effect_up": "Richer rank-R CP tensor u[i,j,k] = Σ_r h[r] W_x[r,i] W_y[r,j] W_z[r,k] → decoder can represent more complex 3D fields.",
+          "effect_down": "Cheaper V_eq = W_x[:,ix] * W_y[:,iy] * W_z[:,iz] assembly (rank × n_eq×7). Cheaper jacfwd through decoder.",
+          "cost_model": "Per-step cost scales linearly in rank through V_eq. Unique to our CP-tensor decoder — Kim-Choi's masked MLP has no equivalent knob.",
+          "analog_in_corpus": "No direct analog — this is architectural to our decoder.",
+          "lever_size": "Factor ~1.5 from 512 to 768"
+        }
+      ]
+    },
+    {
+      "id": "tier2",
+      "title": "Tier 2 — 'Free' knobs (accuracy up, no online cost)",
+      "blurb": "These are the architectural advantage of our ViT-encoder + CP-decoder split. Because the encoder runs exactly once per query (to produce z₀ for GN warm-start), its cost is amortised across all time steps and all GN iterations. This is something Kim-Choi's symmetric masked autoencoder cannot exploit.",
+      "knobs": [
+        {
+          "name": "Encoder depth (ENC_LAYERS)",
+          "location": "train_heat_vitcp.py:260",
+          "current": "6",
+          "effect_up": "More ViT blocks → better encoder produces latent codes z₀ closer to the true minimum → GN starts closer to the solution → fewer iterations, better final accuracy.",
+          "effect_down": "Thinner encoder → worse cold-start z₀, but online inference cost is unchanged (encoder runs once).",
+          "cost_model": "Offline training cost grows ~linearly in depth. Online cost: one encoder forward pass per query, negligible vs the many GN steps × n_eq Jacobian assemblies.",
+          "analog_in_corpus": "FourCastNet / ClimaX scale ViTs much further (dozens of blocks) for atmospheric PDEs — evidence this is a cheap lever.",
+          "lever_size": "Free"
+        },
+        {
+          "name": "Encoder width (EMBED)",
+          "location": "train_heat_vitcp.py:258",
+          "current": "96",
+          "effect_up": "Higher-capacity attention → better manifold parameterisation, better z₀.",
+          "effect_down": "Smaller model, faster training, unchanged online cost.",
+          "cost_model": "Offline only.",
+          "lever_size": "Free online"
+        },
+        {
+          "name": "Patch size (PATCH)",
+          "location": "train_heat_vitcp.py:257",
+          "current": "8 → 8³=512 voxels/token, 64 tokens at N=64",
+          "effect_up": "Coarser patches → fewer tokens, faster encoder, less spatial resolution.",
+          "effect_down": "Finer patches → more tokens, finer spatial attention, more accurate latent code.",
+          "cost_model": "Offline only; online encoder pass is dwarfed by solver.",
+          "lever_size": "Free online"
+        },
+        {
+          "name": "Decoder MLP hidden (HIDDEN_DIM)",
+          "location": "train_heat_vitcp.py:256",
+          "current": "256",
+          "effect_up": "More nonlinear capacity in the W1, W2 layers before the CP tensor → richer decoder.",
+          "effect_down": "Smaller, faster jacfwd through W1/W2.",
+          "cost_model": "Affects jacfwd cost but is small relative to V_eq assembly — semi-free in practice.",
+          "analog_in_corpus": "Kim-Choi 2022 masked-MLP hidden sizes 40–160.",
+          "lever_size": "Semi-free — small online impact"
+        }
+      ]
+    },
+    {
+      "id": "tier3",
+      "title": "Tier 3 — Jacobian-regularity knobs (the cold-start convergence story)",
+      "blurb": "These knobs don't appear on the headline Pareto plot, but they decide whether the latent Gauss-Newton solver converges *at all* from a cold start. This is the claim our paper hangs on: decoder Jacobian regularity, not reconstruction accuracy, is what makes NM-ROM work.",
+      "knobs": [
+        {
+          "name": "Linear skip W_direct (architectural)",
+          "location": "train_heat_vitcp.py:191, 203",
+          "current": "Always on — h = W_direct(z) + W_rank(MLP(z))",
+          "effect_up": "The linear skip guarantees the decoder Jacobian has a lower-bounded singular value from the POD-like linear path, even when the nonlinear MLP+CP path saturates. This is what prevents latent collapse and enables cold-start GN convergence.",
+          "effect_down": "Without W_direct, empirically GN diverges from cold start on our hardest parameters — this is the ablation that motivates the whole architecture.",
+          "cost_model": "Free — linear layer is tiny relative to CP tensor assembly.",
+          "analog_in_corpus": "Geelen-Wright-Willcox 2022 u = Vz + V̄(z⊗z) is the same philosophy: linear part controls Jacobian. Botteghi-Glas-Brune 2026 uses invertible residual networks for the same reason.",
+          "lever_size": "Binary — on or off; off = no convergence"
+        },
+        {
+          "name": "Weight decay",
+          "location": "train_heat_vitcp.py:299",
+          "current": "5e-4",
+          "effect_up": "Smoother decoder → better-conditioned Jacobian → more robust GN, but lower reconstruction.",
+          "effect_down": "Overfit to reconstruction, irregular Jacobian, GN stalls.",
+          "cost_model": "Offline only.",
+          "lever_size": "Invisible on Pareto plot; visible on GN convergence histograms"
+        },
+        {
+          "name": "LM damping floor",
+          "location": "nm_rom_heat_vitcp.py:522",
+          "current": "λ ≥ max(1e-3 · trace(H) / (k+1), 1e-8)",
+          "effect_up": "Larger λ → more robust to ill-conditioning → converges even with a worse Jacobian, but takes more iterations.",
+          "effect_down": "Smaller λ → closer to pure GN, fewer iterations when Jacobian is well-conditioned, divergence when it isn't.",
+          "cost_model": "Pure GN needs fewer iterations when it works; LM is a safety net that costs iterations for robustness.",
+          "lever_size": "Couples to Jacobian regularity — good decoder lets you shrink λ"
+        },
+        {
+          "name": "GN max_iter + tolerance",
+          "location": "nm_rom_heat_vitcp.py:546",
+          "current": "max_iter=10, tol = 1e-3 · gnorm0",
+          "effect_up": "More iterations, tighter tol → lower residual, lower rel-L².",
+          "effect_down": "Fewer iterations, looser tol → faster per step, but residual may not converge and errors accumulate across time steps.",
+          "cost_model": "Linear in iterations.",
+          "lever_size": "Small knob; real story is how few iterations a good Jacobian needs"
+        }
+      ]
+    }
+  ],
+  "demonstration": {
+    "title": "How to demonstrate this in the paper",
+    "blurb": "Three figures/tables, one per tier. Each one is a story a reviewer can understand in 10 seconds.",
+    "experiments": [
+      {
+        "id": "fig1",
+        "title": "Figure 1 — Pareto front (Tier 1 demonstration)",
+        "what": "Scatter plot: x-axis = wall-clock speedup vs FOM, y-axis = test rel-L². One marker per (N_EQ_SAMPLES, k_dim, rank) configuration. Color/shape code method family: ours vs POD-LSPG-HR baseline vs Kim-Choi-style masked-MLP baseline.",
+        "how": "Sweep N_EQ_SAMPLES ∈ {8, 16, 32, 64, 128, 250} at fixed (k=24, rank=512). Separately sweep (k, rank) ∈ {(20, 384), (24, 512), (32, 640), (40, 768)} at fixed N_EQ_SAMPLES=32. Plot both sweeps on the same axes.",
+        "why": "This is the figure every NM-ROM paper has. Cheung-Choi 2022 Figure 9 is the template — a Pareto front colored by oversampling ratio. Reviewers expect it; its absence is a red flag.",
+        "interpretation": "A concave-down Pareto frontier is the win condition. If your points dominate Kim-Choi's published (11.7×, 1%) on the same benchmark, you win. If they don't, the frontier still shows where your knobs live."
+      },
+      {
+        "id": "fig2",
+        "title": "Figure 2 — 'Free knob' scaling (Tier 2 demonstration)",
+        "what": "Two-panel plot. Left: rel-L² vs encoder parameters (sweep ENC_LAYERS ∈ {2,4,6,8}, EMBED ∈ {64,96,128}). Right: online wall-clock per time step vs the same sweep. Point: left panel trends down, right panel is flat.",
+        "how": "Retrain the encoder at 6 encoder configurations holding the decoder fixed (k=24, rank=512). Measure rel-L² on held-out parameters and online wall-clock for 50 time steps.",
+        "why": "Nobody in the NM-ROM corpus has a decoupled encoder/decoder cost story. Kim-Choi's symmetric MLP means every encoder improvement inflates online cost. Our ViT+CP split breaks that coupling — which is a genuine architectural claim.",
+        "interpretation": "If the right panel is flat within noise while the left panel shows monotonic accuracy gains, you've demonstrated that encoder capacity is a free lever — an argument Kim-Choi/Diaz cannot make."
+      },
+      {
+        "id": "fig3",
+        "title": "Figure 3 — Jacobian-regularity ablation (Tier 3 demonstration)",
+        "what": "Cold-start GN convergence histograms (or success-rate bar chart) across 100 held-out parameters, comparing: (a) full architecture (linear skip ON), (b) linear skip OFF (ablation), (c) Kim-Choi-style masked-MLP decoder at matched parameter count.",
+        "how": "Train three decoders on the same data. For each held-out parameter, run the LM-GN solver from a random latent init (no warm-start). Record: (1) % of runs that converge to rel-L² < 1% in ≤10 iterations, (2) median iterations to convergence, (3) failure modes.",
+        "why": "This is the figure that makes your paper's thesis a *claim with evidence*, not an architectural preference. Kim-Choi and Diaz warm-start from the encoder and don't report cold-start behaviour; Geelen-Wright-Willcox's quadratic-manifold paper claims the same Jacobian-regularity motivation but doesn't quantify it.",
+        "interpretation": "If (a) converges on most parameters and (b)/(c) fail on a meaningful fraction, you've demonstrated that Jacobian regularity — not reconstruction accuracy — is the load-bearing property. This is the evidence your central claim needs."
+      },
+      {
+        "id": "fig4",
+        "title": "Figure 4 (optional) — Decoder Jacobian spectrum",
+        "what": "For a random held-out z, plot the singular-value spectrum of ∂decoder/∂z for (a) ours, (b) no-skip ablation, (c) Kim-Choi masked MLP. Overlay with the minimum singular value required for LM-GN to converge at the current λ.",
+        "how": "One-time evaluation: pick a z, compute Jacobian via jax.jacfwd, plot singular values on log scale.",
+        "why": "This is the 'why' behind Figure 3. It directly visualises the claim: the linear skip lifts the tail of the singular-value spectrum, which is what keeps the Gauss-Newton normal equations well-conditioned.",
+        "interpretation": "Ours should have a flatter tail; ablations should show a sharp drop-off. This is the figure that turns 'Jacobian regularity' from a phrase into a measurable property."
+      },
+      {
+        "id": "table1",
+        "title": "Table 1 — Headline comparison",
+        "what": "One row per method: ours-aggressive, ours-balanced, ours-accurate, POD-LSPG-HR, Kim-Choi (if you can reimplement), Fresca POD-DL-ROM (non-intrusive reference). Columns: rel-L², speedup, training time, parameter count, whether physics-exact, whether needs warm-start.",
+        "how": "Run the three ours-configurations at the three (N_EQ_SAMPLES, k, rank) points chosen from Figure 1. Reuse others from published numbers if direct reimplementation is out of scope — just cite.",
+        "why": "This is the table gLaSDI (He-Choi 2023) uses — one row per PDE × one column per method. It's the standard format and reviewers will scan it first.",
+        "interpretation": "The three 'ours' rows let you show the Pareto sweep as a table, not just a plot. Aggressive row claims 'our fastest setting'; accurate row claims 'our best-accuracy setting'; balanced row is your recommended default."
+      }
+    ],
+    "minimum_viable": "If you only have time for one figure, make Figure 1 (Pareto). If two, add Figure 3 (Jacobian ablation) — it's what separates your paper from yet-another-NM-ROM."
+  }
+}
