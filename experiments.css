@@ -28,7 +28,7 @@
   top: 20px;
   align-self: start;
   height: calc(100vh - 40px);
-  background: #fff;
+  background: var(--card);
   border: 1px solid var(--rule);
   border-radius: 10px;
   overflow: hidden;
@@ -46,7 +46,7 @@
   align-items: center;
   padding: 10px 14px;
   border-bottom: 1px solid var(--rule);
-  background: #fafafa;
+  background: var(--pdf-head-bg);
   font-size: 13px;
 }
 #pdf-pane-title {
@@ -91,8 +91,9 @@
   width: 100%;
   height: 100%;
   border: none;
-  background: #525659;
+  background: var(--pdf-frame-bg);
 }
+body.pdf-dark #pdf-frame { filter: invert(0.92) hue-rotate(180deg); }
 
 .paper-card.pdf-active {
   border-color: var(--accent);
@@ -110,7 +111,7 @@
 #paper-nav a:hover { background: var(--accent-soft); color: var(--accent); }
 
 .paper-card {
-  background: #fff;
+  background: var(--card);
   border: 1px solid var(--rule);
   border-radius: 10px;
   margin-bottom: 28px;
@@ -130,8 +131,8 @@
   margin-right: 10px;
 }
 .paper-card .tldr {
-  background: #fffbe6;
-  border-left: 3px solid #e6b800;
+  background: var(--tldr-bg);
+  border-left: 3px solid var(--tldr-rule);
   padding: 12px 16px;
   border-radius: 0 6px 6px 0;
   margin: 0 0 16px;
@@ -144,7 +145,7 @@
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.1em;
-  color: #8a6800;
+  color: var(--tldr-head);
   margin-bottom: 4px;
 }
 .paper-card h3 {
@@ -181,13 +182,13 @@
 .paper-card table.details code {
   font-family: var(--mono);
   font-size: 12.5px;
-  background: #f5f5f5;
+  background: var(--chip);
   padding: 1px 5px;
   border-radius: 3px;
 }
 .paper-card .borrow {
-  background: #eefaf0;
-  border-left: 3px solid #2ea043;
+  background: var(--borrow-bg);
+  border-left: 3px solid var(--borrow-rule);
   padding: 10px 14px;
   border-radius: 0 6px 6px 0;
   margin: 14px 0 0;
@@ -200,7 +201,7 @@
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.1em;
-  color: #1a6b2a;
+  color: var(--borrow-head);
   margin-bottom: 4px;
 }
 .paper-card .actions {
@@ -216,12 +217,12 @@
   text-decoration: none;
   color: var(--fg);
   font-size: 13px;
-  background: #fff;
+  background: var(--input-bg);
 }
 .paper-card .actions a:hover { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
 
 #takeaways {
-  background: var(--accent-soft);
+  background: var(--takeaways-bg);
   border: 1px solid var(--accent);
   border-radius: 10px;
   padding: 22px 28px;

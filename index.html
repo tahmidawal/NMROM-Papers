@@ -5,10 +5,15 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>NM-ROM Literature — Reading Room</title>
 <link rel="stylesheet" href="style.css">
+<script>(function(){var t=localStorage.getItem("theme");if(!t){t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";}document.documentElement.setAttribute("data-theme",t);})();</script>
 </head>
 <body>
 <header>
   <div class="wrap">
+    <div class="theme-toggles">
+      <button id="theme-btn" class="theme-btn" title="Toggle page dark mode">🌙 Dark</button>
+      <button id="pdf-dark-btn" class="theme-btn" title="Toggle PDF dark mode">📄 PDF dark</button>
+    </div>
     <h1>NM-ROM Literature</h1>
     <p class="tag">Curated reading room for the ViT + LinearCP NM-ROM paper · organized by Section A (must-cite) and Section B (relevant).</p>
     <p class="tag" style="margin-top:8px;"><a href="experiments.html" style="color:var(--accent);text-decoration:none;font-weight:600;">→ Walk through the experiments each paper ran</a></p>
@@ -43,6 +48,7 @@
 
 <footer><div class="wrap"><p>Built <span id="built"></span>. <a href="https://github.com/tahmidawal/NMROM-Papers">Source on GitHub</a>.</p></div></footer>
 
+<script src="theme.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
