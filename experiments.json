@@ -1,0 +1,338 @@
+{
+  "intro": {
+    "title": "What experiments do the other NM-ROM papers run?",
+    "plain_english": "Every paper in this field runs the same basic experiment: train on some PDE, measure how accurate and how fast their method is compared to existing methods. This page walks through what each of 15 key papers actually ran, so you can see which benchmarks are standard, which speedups are realistic, and where yours fits in.",
+    "how_to_read": "Click any paper to expand its experimental setup. The 'In plain English' section tells you the gist. The 'Details' table gives you the numbers a reviewer would look at."
+  },
+  "papers": [
+    {
+      "slug": "lee-carlberg-2020",
+      "title": "Lee & Carlberg 2020 — the foundational NM-ROM paper",
+      "pdf": "pdfs/A-must-cite/foundation/lee-carlberg-2020.pdf",
+      "tldr": "Showed for the first time that a deep convolutional autoencoder can replace the linear POD subspace in a reduced-order model. Tested on small 1D and 2D problems. No speedup reported — they were proving the concept, not engineering it for speed.",
+      "in_plain_english": "They took 1D Burgers equation (a textbook advection problem, 256 grid points) and a 2D chemically reacting flow (8,192 DoF). For each, they trained a CNN autoencoder to compress PDE solutions to a tiny latent code, then ran two versions of projection — Galerkin and LSPG — in that latent space. They showed their method reached 0.1% error at latent dim 5 where POD needed latent dim 50. That gap is the whole point of the paper. They never measured speedup because without hyper-reduction, the CNN decoder is slow enough to kill any gains.",
+      "details": {
+        "PDEs": "1D Burgers (256 cells); 2D chemically-reacting flow (65×32 grid × 4 channels = 8,192)",
+        "Parameters": "n_μ=2 (boundary value + source rate for Burgers; pre-exponential + activation energy for reacting flow)",
+        "Training data": "64–80 parameter samples × 500–600 timesteps = ~40,000 snapshots",
+        "Latent k": "swept {3, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50}",
+        "Baselines": "POD-Galerkin, POD-LSPG, projection-error lower bounds",
+        "Metrics": "relative L² over full trajectory",
+        "Hyper-reduction": "None (deferred to future work)",
+        "Hardware": "Not stated; TensorFlow + pyMORTestbed",
+        "Headline": "rel-L² vs k curves: Deep-LSPG hits <0.1% at k=5 where POD stalls at 10–40%"
+      },
+      "what_to_borrow": "The rel-L² vs k curve is still the canonical 'Kolmogorov-barrier' plot. You should make one."
+    },
+    {
+      "slug": "kim-choi-2022",
+      "title": "Kim, Choi et al. 2022 — the paper that made NM-ROM actually fast",
+      "pdf": "pdfs/A-must-cite/eq-nmrom-line/kim-choi-2022.pdf",
+      "tldr": "Lee-Carlberg's method looked good but wasn't faster than the full solver. Kim-Choi fixed that by replacing the CNN decoder with a shallow masked autoencoder so per-node cost is O(1), then added hyper-reduction. First NM-ROM paper with real speedup numbers.",
+      "in_plain_english": "Same kind of PDEs as Lee-Carlberg — 1D Burgers and 2D viscous Burgers at Reynolds 10,000 — but with a much smaller parameter space: just one scalar μ that slightly tweaks the initial condition, trained on only 2–4 values. The key trick: instead of a deep convolutional autoencoder, they use a tiny fully-connected autoencoder where each output pixel depends on only a handful of latent features. That means when the Gauss-Newton solver asks for a single row of the decoder Jacobian, it's cheap. They combine this with sample-node hyper-reduction (30–60 points) and get 11× speedup at 1% error. This is the paper your architecture is directly competing with.",
+      "details": {
+        "PDEs": "1D inviscid Burgers (1,001 points, final time 0.5); 2D viscous Burgers Re=10,000 (60×60×2 = 6,728 DoF, final time 2)",
+        "Parameters": "n_μ=1 scalar ∈ [0.9, 1.1], IC amplitude",
+        "Training data": "2 params for 1D (~1,000 snapshots), 4 params for 2D (~6,000 snapshots), 10% held for validation",
+        "Latent k": "{2, 3, 5, 10, 15, 20}; headline k=5",
+        "Baselines": "POD-Galerkin, POD-LSPG, POD-LSPG with hyper-reduction",
+        "Metrics": "max rel-L² over time, wall-clock time, speedup",
+        "Hyper-reduction": "Yes — gappy-POD/GNAT style, 30–60 sample points",
+        "Hardware": "Intel Xeon E5-2637 v3 CPU for timing; Quadro M6000 for training; PyTorch",
+        "Headline": "Table 3 (2D Burgers, k=5): NM-LSPG-HR rel-err ~1%, speedup ~11.7× vs LS-LSPG-HR rel-err 34–38% at speedup ~28×"
+      },
+      "what_to_borrow": "Exactly this experimental template: 1–4 training parameters, scalar μ, k=5, report max rel-L² + speedup vs POD-LSPG-HR. Your paper should add this as a direct baseline row on each PDE."
+    },
+    {
+      "slug": "diaz-choi-heinkenschloss-2024",
+      "title": "Diaz, Choi, Heinkenschloss 2024 — scaling NM-ROM by cutting the mesh into pieces",
+      "pdf": "pdfs/A-must-cite/eq-nmrom-line/diaz-choi-heinkenschloss-2024.pdf",
+      "tldr": "Problem: a monolithic autoencoder's output layer grows with mesh size. Solution: cut the domain into 4 pieces, train a tiny autoencoder per piece, stitch them together in the online solve.",
+      "in_plain_english": "2D steady Burgers on a 480×24 grid (N=23,040). They split the domain into 2×2=4 subdomains, train 4 small Kim-Choi-style autoencoders, and enforce interface continuity in the online Gauss-Newton solve. Parameter is 2D: shock location and steepness, 6,400 snapshots on an 80×80 parameter grid. Headline: 48 total latent DoF gets them 1.3e-3 error at 22× speedup, or 44× with extra hyper-reduction. A linear POD at the same 48 DoF gets 2e-2 — an order of magnitude worse.",
+      "details": {
+        "PDEs": "2D steady Burgers on rectangle",
+        "N": "23,040 monolithic, ~25k with overlap across 2×2 subdomains",
+        "Parameters": "n_μ=2 (shock location a ∈ [1, 10⁴], steepness λ ∈ [5, 25])",
+        "Training data": "6,400 snapshots on 80×80 grid → 5,760 train / 640 test",
+        "Latent k per subdomain": "(4,2) up to (16,8) interior+interface; total 24–108 DoF",
+        "Baselines": "Domain-decomposed linear POD ROM with/without hyper-reduction",
+        "Metrics": "aggregate rel-L² across subdomains, speedup, NN param count",
+        "Hyper-reduction": "Yes — 100 collocation points per subdomain",
+        "Hardware": "LLNL Lassen: IBM Power9 CPU + V100 GPU; PyTorch + SparseLinear",
+        "Headline": "Table 3 — NM-ROM 48 DoF: 1.28e-3 rel-err, 21.7× speedup (43.9× with HR); LS-ROM at same DoF: 1.98e-2 (10× worse)"
+      },
+      "what_to_borrow": "The framing 'at matched latent dim, NM-ROM beats POD by an order of magnitude' — and their table format directly comparing NM-ROM to LS-ROM across latent dims."
+    },
+    {
+      "slug": "romor-stabile-rozza-2023",
+      "title": "Romor, Stabile, Rozza 2023 — the non-Choi-group competitor",
+      "pdf": "pdfs/A-must-cite/eq-nmrom-line/romor-stabile-rozza-2023.pdf",
+      "tldr": "Independent CAE-NM-ROM with 'reduced over-collocation' instead of LSPG. They enforce the residual at a few grid points rather than projecting onto a test basis. Reports solid accuracy but speedup is marginal — their PDEs are too small for hyper-reduction to help.",
+      "in_plain_english": "Two 2D advection-dominated benchmarks — a nonlinear conservation law and shallow water — on a 60×60 grid. One parameter controlling the initial condition, 10–12 training parameter samples × 500 timesteps. Latent dim fixed at 4. They use a convolutional autoencoder and sample 50–150 'magic points' where the PDE residual has to vanish. Not a head-to-head speedup winner, but the one paper outside the LLNL-Choi-group doing EQ-style NM-ROM with hyper-reduction.",
+      "details": {
+        "PDEs": "2D nonlinear conservation law (ν=1e-4); 2D shallow water",
+        "N": "3,600 cells × 2 or 3 channels",
+        "Parameters": "n_μ=1 scalar (IC multiplier) + time",
+        "Training data": "NCL: 12 params × 501 steps = 6k; SWE: 10 × 501 = 5k",
+        "Latent k": "4 fixed",
+        "Baselines": "POD reconstruction, NM-LSPG (no hyper-reduction), LSTM purely data-driven",
+        "Metrics": "mean/max rel-L² over time, training time, avg online time/step, speedup",
+        "Hyper-reduction": "Yes — 25–150 magic points (reduced over-collocation)",
+        "Hardware": "i7-8750H CPU + GTX 1060 GPU",
+        "Headline": "Fig 9 (NCL) / Fig 17 (SWE) — mean + max rel-L² across 8–16 test params, compared across {NM-LSPG, NM-LSPG-ROC, NM-LSPG-GNAT, LSTM, CAE-reconstruction lower bound}"
+      },
+      "what_to_borrow": "Use as a differentiation target — you need to say why your linear-skip + CP-tensor is better than their plain CAE + collocation."
+    },
+    {
+      "slug": "cheung-choi-copeland-huynh-2022",
+      "title": "Cheung, Choi et al. 2022 — local ROMs via time/distance windowing",
+      "pdf": "pdfs/A-must-cite/eq-nmrom-line/cheung-choi-copeland-huynh-2022.pdf",
+      "tldr": "Rayleigh-Taylor instability is too violent for a single ROM to cover the whole time evolution. They split time into windows and train a separate ROM per window. Really clean Pareto-front plots showing the speedup-vs-accuracy tradeoff as you change hyper-reduction settings.",
+      "in_plain_english": "2D compressible Euler equations simulating Rayleigh-Taylor instability — a heavy fluid falling into a light one, chaotic mushroom shapes develop. They use Lagrangian finite elements at up to 33k DoF, with one parameter (the Atwood number, i.e. density ratio). The trick: instead of one ROM for the whole trajectory, chop time into many windows and train a small ROM for each. They compare two ways to chop — by physical time vs by penetration distance — and show distance is better. Runs DEIM hyper-reduction with oversampling ratio λ ∈ [2,7] and shows a Pareto curve. Max speedup ~46×, relative L² in the single-digit percent range.",
+      "details": {
+        "PDEs": "2D compressible Euler (Rayleigh-Taylor)",
+        "N": "N_V 594–33k, N_E 256–16k; mesh refinement levels 2–5",
+        "Parameters": "n_μ=1, Atwood number A ∈ [0.3, 0.35]",
+        "Training": "Adaptive time-windowing, samples/window ∈ {10, 20, 40}",
+        "Latent k": "Per-window via POD energy threshold δ_σ ∈ {1e-4, 1e-10}",
+        "Baselines": "TW-ROM (time windows) vs DW-ROM (distance windows) — both self-comparison",
+        "Metrics": "rel-L² velocity + energy + position at final time; speedup",
+        "Hyper-reduction": "Yes — DEIM + SNS, oversampling λ ∈ [2, 7]",
+        "Hardware": "LLNL Quartz, Intel Xeon CPU only",
+        "Headline": "Table 3 + Fig 9/10 Pareto: at refinement 5, DW-ROM gets 46× speedup at rel-err_v ~3e-3. Pareto curves show DW beats TW across oversampling sweep"
+      },
+      "what_to_borrow": "The Pareto-front plot format (Figure 9: rel-L² for velocity vs relative wall time, color-coded by method). This is the best visual argument for an accuracy-speedup tradeoff."
+    },
+    {
+      "slug": "geelen-wright-willcox-2022",
+      "title": "Geelen, Wright, Willcox 2022 — quadratic manifold instead of neural net",
+      "pdf": "pdfs/A-must-cite/quadratic-manifolds/geelen-wright-willcox-2022.pdf",
+      "tldr": "Their decoder is u = V·z + V̄·(z⊗z) — linear POD plus a learned quadratic correction. No neural network. Their motivation is identical to yours: they want a decoder with a well-behaved Jacobian so the projection solver stays stable.",
+      "in_plain_english": "Two clean benchmarks: 1D linear advection (4,096 DoF, 1D parameter) and a 2D wave equation on a 321,201-node finite-element mesh with no parameter sweep, just time evolution. They fit a quadratic map by regression and compare to linear POD at the same latent dim. The key finding: quadratic at r=30 matches linear at r=60. No speedup numbers — they don't use hyper-reduction. Their theoretical framing (decoder Jacobian regularity matters) is the closest published cousin to your Jacobian-regularity argument.",
+      "details": {
+        "PDEs": "1D linear advection (c=10); 2D wave equation (Neumann BC, Gaussian-pulse IC)",
+        "N": "Advection 4,096; Wave 321,201 (quadratic triangular FEM)",
+        "Parameters": "Advection n_μ=1 (pulse center); Wave no parameter",
+        "Training data": "Advection 2,000 snapshots; Wave 1,000",
+        "Latent k": "Advection r ∈ {10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 70}; Wave r=40",
+        "Baselines": "Linear POD + operator inference",
+        "Metrics": "time-integrated rel-L²; error fields; no speedup",
+        "Hyper-reduction": "None",
+        "Hardware": "Not stated",
+        "Headline": "Fig 9: rel-error vs r, quadratic r=30 ≈ linear r=60",
+        "Code": "github.com/geelenr/quad_manifold"
+      },
+      "what_to_borrow": "Their motivation paragraph — decoder Jacobian regularity — is almost word-for-word your motivation. You should cite this and argue your CP+skip beats quadratic because it's EQ-compatible."
+    },
+    {
+      "slug": "barnett-farhat-2022",
+      "title": "Barnett & Farhat 2022 — quadratic manifold at industrial CFD scale",
+      "pdf": "pdfs/A-must-cite/quadratic-manifolds/barnett-farhat-2022.pdf",
+      "tldr": "Single huge CFD benchmark — 17 million DoF Navier-Stokes around an Ahmed body. No parameter sweep, just time. Shows quadratic-manifold ROM cuts online time 131× on a massive industrial problem. Not a benchmark you'd replicate, but a data point for 'quadratic manifolds work at scale.'",
+      "in_plain_english": "They only ran one problem, but it's enormous — 17 million degrees of freedom, compressible Navier-Stokes Detached Eddy Simulation around an Ahmed body (a standard automotive-aerodynamics shape). Trained on 1,251 snapshots, reduced to 39 latent dims (vs 627 for linear POD), plus ECSW hyper-reduction that cuts the mesh to 544 elements (0.019% of original). Reported 131× wall-clock speedup with under 1% QoI error. CPU only.",
+      "details": {
+        "PDEs": "3D compressible Navier-Stokes / DES, Ahmed body turbulent wake",
+        "N": "17,342,604",
+        "Parameters": "None — time-only, slant angle and flow conditions fixed",
+        "Training data": "1,251 snapshots over t ∈ [0, 0.2]s",
+        "Latent k": "PROM 627 (POD 99.99% energy); HQPROM 39 (quadratic)",
+        "Baselines": "POD-LSPG PROM, hyper-reduced HPROM",
+        "Metrics": "QoI errors (C_D, C_L, velocities), wall-clock + CPU speedup",
+        "Hyper-reduction": "Yes — ECSW, 7,389 elements (HPROM) / 544 (HQPROM)",
+        "Hardware": "Linux cluster, 2× Xeon Gold 5118, CPU only",
+        "Headline": "Table 4: HDM 5.45e4 s → HPROM 1.35e4 s (4×) → HQPROM 4.15e2 s (131×); QoI errors <1%"
+      },
+      "what_to_borrow": "Not the setup — too different. Just the claim 'quadratic manifolds scale to millions of DoF at 100× speedup,' for context."
+    },
+    {
+      "slug": "fresca-dede-manzoni-2021",
+      "title": "Fresca, Dedè, Manzoni 2021 — the DL-ROM paper",
+      "pdf": "pdfs/A-must-cite/latent-dynamics/fresca-dede-manzoni-2021.pdf",
+      "tldr": "A completely different philosophy: train an autoencoder, then train a second network that maps (time, parameters) directly to the latent code. No PDE solver at inference. Super fast, super unphysical. This is the main non-intrusive baseline.",
+      "in_plain_english": "They train a CNN autoencoder on PDE snapshots, then train a feed-forward network that takes (t, μ) as input and outputs the latent code directly. Decode to get u. That's it — there's no projection, no Gauss-Newton, no physics in the online phase. Just two neural network forward passes. Tested on four 1D problems: viscous Burgers, linear transport, step-transport, Monodomain+FitzHugh-Nagumo (all at 256 grid points). Headline: their method at latent dim 2–3 matches linear POD at latent dim 90–165. They don't report speedup because they don't solve a PDE online.",
+      "details": {
+        "PDEs": "4× 1D: viscous Burgers; linear transport (Gaussian IC); step transport (2-param); Monodomain-FitzHugh-Nagumo",
+        "N": "All 256 grid points",
+        "Parameters": "n_μ ∈ {1, 2}",
+        "Training data": "N_train=20, N_test=19 (or 21×20 tensorized)",
+        "Latent k": "{2, 3, 5, 10, 15, 20, 30, 40}; headline k = n_μ + 1",
+        "Baselines": "Global POD, local RB with clustering",
+        "Metrics": "rel-L² ε_rel, pointwise error, loss curves; NO speedup",
+        "Hyper-reduction": "None",
+        "Hardware": "GTX 1070; TensorFlow",
+        "Headline": "Plot of ε_rel vs latent dim: DL-ROM at k=2–3 matches POD at k=90–165"
+      },
+      "what_to_borrow": "Position your paper against them: you pay the cost of an online GN solve to get physics consistency. They don't, and their out-of-distribution generalization is worse. Make that explicit."
+    },
+    {
+      "slug": "fresca-manzoni-2022",
+      "title": "Fresca & Manzoni 2022 — POD-DL-ROM, the deployment-ready version",
+      "pdf": "pdfs/A-must-cite/latent-dynamics/fresca-manzoni-2022.pdf",
+      "tldr": "DL-ROM was accurate but slow to train because the decoder output layer has one neuron per grid point. Pre-compress with POD first, then train the autoencoder on the POD coefficients. Training drops 50× and the thing runs in milliseconds. The strongest non-intrusive baseline you can compare against.",
+      "in_plain_english": "Four benchmarks including your kind of regime: 2D advection-diffusion-reaction (10k DoF), 2D cardiac monodomain (4k–65k), **3D elastodynamics beam (17k)**, 2D Navier-Stokes cylinder flow (65k). 1–4 parameters. They pre-compress snapshots with POD to an intermediate dim, then train the AE on those coefficients. Result: online evaluation is a matrix-vector product plus a tiny network forward pass. Inference in 15–80 ms per query, training cut from 15h to 24min. Best speedups up to 16,000× vs FOM. But again: no online PDE solve, so no Gauss-Newton, no physics-exact behavior.",
+      "details": {
+        "PDEs": "2D AD-R; 2D monodomain; 3D elastodynamics beam; 2D NS cylinder",
+        "N": "10,657; 4,096–65,536; 17,022; up to 257,528",
+        "Parameters": "n_μ ∈ {1, 2, 4}",
+        "Training data": "N_train × N_t: e.g. 500 × 100 (AD-R), 25 × 1000 (monodomain), 11 × 400 (NS)",
+        "Latent k": "typically n_μ + 1 or +2 (so 2–5)",
+        "Baselines": "POD-Galerkin (with local clustering), plain DL-ROM",
+        "Metrics": "ε_rel, per-timestep error, training time, testing time, speedup",
+        "Hyper-reduction": "None — the whole point is to avoid it",
+        "Hardware": "V100 32GB for big cases, GTX 1070 for small; FOM on Xeon HPC",
+        "Headline": "Table 2: at ε=4e-3, POD-DL-ROM gets **16,000× speedup**, DL-ROM 3,000×, POD-G 30×. Training 24 min vs 15 h for DL-ROM"
+      },
+      "what_to_borrow": "Your strongest non-intrusive baseline. Include one row in your speedup table labeled 'POD-DL-ROM' and show that their numbers are faster but your errors are lower out-of-distribution."
+    },
+    {
+      "slug": "maulik-lusch-balaprakash-2021",
+      "title": "Maulik, Lusch, Balaprakash 2021 — CAE + LSTM",
+      "pdf": "pdfs/A-must-cite/latent-dynamics/maulik-lusch-balaprakash-2021.pdf",
+      "tldr": "CNN autoencoder compresses space; LSTM evolves the latent code through time. Aimed at advection-dominated PDEs where POD-Galerkin fails. The canonical 'latent ODE' baseline for fluid mechanics papers.",
+      "in_plain_english": "Given the latent code history, an LSTM predicts the next latent code, and the CNN decoder reconstructs the field. Trained on 1D viscous Burgers and 2D shallow water. Shows that at latent dim 2–6 they beat POD-Galerkin, which diverges for advection-dominated problems. Wall clock per simulation: 1.9 s for their method, 24.7 s for POD-G. Simple and works, no physics enforcement at all.",
+      "details": {
+        "PDEs": "1D viscous Burgers; 2D inviscid shallow water (3 conserved vars)",
+        "N": "1D ~128; 2D 64×64×3 = 12,288",
+        "Parameters": "Burgers Re ∈ {1000–4000}; SWE 2D Gaussian pulse center",
+        "Training data": "Burgers 19 sims × 400 snapshots; SWE 90 train + 10 test sims × 100",
+        "Latent k": "Burgers 2; SWE 6",
+        "Baselines": "POD-Galerkin at 2–40 modes",
+        "Metrics": "L² error at final time, per-variable MSE, wall-clock seconds",
+        "Hyper-reduction": "None",
+        "Hardware": "Argonne ALCF, model not stated",
+        "Headline": "Table 1: L² error at Re=1000–4000; POD-G diverges at 30 modes / Re=4000; CAE-LSTM 1.9 s vs POD-G 24.7 s"
+      },
+      "what_to_borrow": "Include as a baseline only if you have a time-dependent problem where you want to show autoregressive rollout fails on new parameters. Otherwise skip."
+    },
+    {
+      "slug": "fries-he-choi-2022",
+      "title": "Fries, He, Choi 2022 — LaSDI (latent space dynamics identification)",
+      "pdf": "pdfs/A-must-cite/latent-dynamics/fries-he-choi-2022.pdf",
+      "tldr": "Train an autoencoder, then fit a symbolic ODE (SINDy-style) to the latent trajectories. At a new parameter, interpolate the identified ODE and integrate. Different philosophy — you get a little ODE instead of a black-box regression.",
+      "in_plain_english": "Like Fresca-Manzoni but instead of regressing the latent code directly from (t, μ), they fit an actual ODE to the latent trajectory: dz/dt = f(z; coefficients depending on μ). At a new parameter, they interpolate the ODE coefficients and integrate. Tested on 1D Burgers, 2D Burgers at Re=10,000, 2D nonlinear heat conduction, and 2D radial advection. Parameters always 1D or 2D, latent dim 3–5. Speedups range 100× to 800× depending on problem.",
+      "details": {
+        "PDEs": "1D Burgers; 2D Burgers Re=10k; 2D nonlinear heat; 2D radial advection",
+        "N": "1D 1,001; 2D Burgers 10×10; heat 8,192 triangles P2; advection 9,216",
+        "Parameters": "n_μ ∈ {1, 2} — IC amplitude + width, or PDE coefficients",
+        "Training data": "4, 9, 17, or 25 parameter points depending on problem",
+        "Latent k": "Burgers 3–4; heat swept; advection 3–5",
+        "Baselines": "LaSDI-LS (POD + dynamics ID) vs LaSDI-NM (AE + dynamics ID)",
+        "Metrics": "max-over-time rel-L² per param; speedup; singular-value decay; error heat maps",
+        "Hyper-reduction": "None — non-intrusive",
+        "Hardware": "Power9 CPU for FOM, V100 GPU for AE training, PyTorch",
+        "Headline": "Bar charts across problems: 1D Burgers 0.99% max rel-err; 2D Burgers ~800× speedup; heat 3.16% (LS) vs 88% (NM)"
+      },
+      "what_to_borrow": "Cite as a serious non-intrusive alternative from the same Choi group, with a clean accuracy-speedup trade. If you only compare to one LaSDI variant, use gLaSDI below."
+    },
+    {
+      "slug": "he-choi-fries-belof-chen-2023",
+      "title": "He, Choi, Fries, Belof, Chen 2023 — gLaSDI with greedy parameter sampling",
+      "pdf": "pdfs/A-must-cite/latent-dynamics/he-choi-fries-belof-chen-2023.pdf",
+      "tldr": "LaSDI + two upgrades: (1) add the FOM residual as a training loss (physics-informed), (2) greedily pick which parameter samples to train on. Gets much better accuracy with fewer training params. This is the strongest LaSDI-family baseline.",
+      "in_plain_english": "Same four PDEs as plain LaSDI. Instead of training on a dense 21×21 parameter grid, they start with a few samples, run their ROM, find the parameter where error is worst, add a FOM simulation there, retrain. Converges in 16–36 samples. Reports per-PDE max rel-L² and speedup: 1D Burgers 1.9% at 89×, 2D Burgers 4.6% at 2,658×, heat 1.4% at 58×, advection 2.0% at 121×. Big improvements over plain LaSDI.",
+      "details": {
+        "PDEs": "1D Burgers, 2D Burgers Re=10k, 2D nonlinear heat, 2D radial advection",
+        "N": "1,001; 7,200; 1,089; 9,216",
+        "Parameters": "n_μ=2 (IC amplitude + width or κ+α)",
+        "Training data": "Adaptive: 16–36 out of 441 candidate parameter points",
+        "Latent k": "{2, 3, 4, 5, 6, 7}; headline 3 or 5",
+        "Baselines": "Plain LaSDI only — no POD-G, DL-ROM, or neural operators",
+        "Metrics": "max rel-L²; wall-clock speedup; loss curves",
+        "Hyper-reduction": "None",
+        "Hardware": "V100 GPU + Power9 CPU (LLNL Lassen); TensorFlow",
+        "Headline": "Per-PDE max rel-L² + speedup table: 1.9%/89×, 4.6%/2658×, 1.4%/58×, 2.0%/121×"
+      },
+      "what_to_borrow": "Their four-PDE table format (one row per PDE, columns = method, rel-L², speedup). You should steal this structure."
+    },
+    {
+      "slug": "kadeethum-et-al-2022",
+      "title": "Kadeethum et al. 2022 — natural convection in porous media",
+      "pdf": "pdfs/B-relevant/nm-rom-variants/kadeethum-et-al-2022.pdf",
+      "tldr": "Clean empirical study of when CAE-based ROMs beat POD-based ones on a real engineering problem (geothermal flow). Useful for the 'when does NM-ROM actually help' conversation.",
+      "in_plain_english": "Darcy flow + energy equation for buoyancy-driven flow in porous media. Three test cases. Trained autoencoders at latent dim 4, 16, 256 and POD at dim 16–500. Result: for the easy case POD wins (low Kolmogorov n-width). For the harder advection-transition cases, CAE at latent 16+ beats POD by two orders of magnitude in MSE. Speedups 7,000× to 7 million× depending on whether you count every timestep or just the final one.",
+      "details": {
+        "PDEs": "Natural convection in porous media (Darcy + energy), 3 benchmarks",
+        "N": "7,110 to 9,600 unstructured FE, interpolated to 128×128 for CAE",
+        "Parameters": "Rayleigh numbers, n_μ ∈ {1, 2}",
+        "Training data": "M={40, 100} train, plus val and test sets",
+        "Latent k": "AE Q ∈ {4, 16, 256}; POD ∈ {16, 50, 100, 500}",
+        "Baselines": "POD with ANN regression vs AE with RBF/ANN regression",
+        "Metrics": "MSE, max pointwise error, box-plots across test set",
+        "Hyper-reduction": "None",
+        "Hardware": "Ryzen Threadripper 3970X CPU; Quadro RTX 6000 GPU",
+        "Headline": "Box-plots: AE Q=16 beats POD 16/50/100 by 2 orders of magnitude on hard cases; 7,000× to 7M× speedup"
+      },
+      "what_to_borrow": "The sensitivity analysis over training-set size and latent dim. Box-plots are a more honest way to show 'my method wins' than a single test parameter."
+    },
+    {
+      "slug": "xu-duraisamy-2020",
+      "title": "Xu & Duraisamy 2020 — multi-level autoencoders on industrial-scale flows",
+      "pdf": "pdfs/B-relevant/nm-rom-variants/xu-duraisamy-2020.pdf",
+      "tldr": "Non-intrusive autoencoder ROM tested on up to 3D ship airwake (500k DoF). Proves autoencoder ROMs scale to real engineering problems. No Galerkin solve, so not a direct NM-ROM competitor.",
+      "in_plain_english": "Four cases, ramping up from 1D advection to 3D unsteady ship airwake (URANS + k-ω turbulence, 506k DoF). Autoencoder compresses space, then predicts future states. Cylinder case: trained on Re ∈ {125, 150, 175, 225, 250, 275}, tested at Re=200 — relative error under 2%, speedup over 3 orders of magnitude. Ship: trained on 4 inflow angles, tested on the middle one, error under 1%, 600× speedup. Large-scale non-intrusive AE-ROM done properly.",
+      "details": {
+        "PDEs": "1D linear advection; Sod shock tube (Euler); 2D NS cylinder wake; 3D URANS ship airwake",
+        "N": "128; 600; 147k; 506k",
+        "Parameters": "Cylinder Re (interpolation); Ship inflow angle",
+        "Training data": "Cylinder 6 × 2,500; Ship 4 × 400",
+        "Latent k": "20–100",
+        "Baselines": "POD (in appendix)",
+        "Metrics": "MSE, relative absolute error, point monitors, contour plots",
+        "Hyper-reduction": "None",
+        "Hardware": "Tesla P100 GPU; Xeon Gold 6154 for FOM timing",
+        "Headline": "Cylinder RAE<2% at Re=200, 2,500× speedup; ship RAE<1%, 600× speedup"
+      },
+      "what_to_borrow": "The 3D ship case is the most impressive scale demonstration in the autoencoder-ROM literature. Cite it when you position your 3D Heat at 64³ as 'comparable scale.'"
+    },
+    {
+      "slug": "pichi-moya-hesthaven-2024",
+      "title": "Pichi, Moya, Hesthaven 2024 — graph autoencoder ROM (GCA-ROM)",
+      "pdf": "pdfs/B-relevant/graph-meshfree/pichi-moya-hesthaven-2024.pdf",
+      "tldr": "CAEs need Cartesian grids. Replace with a graph convolutional autoencoder so the method works on any FEM mesh. Tested on 4 unstructured 2D problems with direct comparison to DL-ROM.",
+      "in_plain_english": "Four 2D unstructured FEM problems: nonlinear Poisson on a hexagonal domain, advection-diffusion, Graetz flow with geometric parameters, and steady Navier-Stokes with a Coanda bifurcation. All with n_μ=2. Instead of a CNN they use message-passing on the mesh graph. They directly benchmark against Fresca's DL-ROM at matched latent dim. Headline: GCA-ROM 2.4e-2 vs DL-ROM 5e-2 vs POD-G 4e-2 on advection (at k=15, 30% training data).",
+      "details": {
+        "PDEs": "2D nonlinear Poisson (hex domain with hole); 2D adv-diff; 2D Graetz; 2D steady NS Coanda bifurcation",
+        "N": "2,562 to 5,160 unstructured triangular mesh nodes",
+        "Parameters": "n_μ=2 always",
+        "Training data": "100 to 3,171 snapshots; train rate 10–30%",
+        "Latent k": "{15, 20, 25}",
+        "Baselines": "POD projection, POD-Galerkin, DL-ROM (Fresca)",
+        "Metrics": "mean rel-L² over test set, trainable params, train/test time, CPU vs GPU",
+        "Hyper-reduction": "None, but variant with 30–70% node retention shown",
+        "Hardware": "Quadro GP100 GPU",
+        "Headline": "Table 2: advection — GCA-ROM 2.4e-2 vs DL-ROM 5e-2 vs POD-G 4e-2 at k=15, rt=30%"
+      },
+      "what_to_borrow": "The direct DL-ROM comparison at matched latent dim. Also their handling of the Poisson benchmark — closest analog to your Poisson case."
+    },
+    {
+      "slug": "cicci-fresca-manzoni-2022",
+      "title": "Cicci, Fresca, Manzoni 2022 — Deep-HyROMnet for 3D elastodynamics",
+      "pdf": "pdfs/B-relevant/dl-roms/cicci-fresca-manzoni-2022.pdf",
+      "tldr": "Replace DEIM hyper-reduction with a neural network that learns the reduced nonlinear operator. Tested on 3D nonlinear elastodynamics including a left-ventricle geometry. Crazy speedups (3,500×) at moderate accuracy.",
+      "in_plain_english": "3D nonlinear elastodynamics — beam + idealized left ventricle with Guccione constitutive law. POD+Galerkin with a choice of hyper-reduction: DEIM (classical) or a learned neural operator (their method). The learned version gives >3,000× speedup on the LV at the cost of worse accuracy than DEIM. Key lesson: if you're willing to trade accuracy for speedup, learned hyper-reduction is extreme. The FOM mesh sizes (3k–39k) are close to your 32³ Poisson scale.",
+      "details": {
+        "PDEs": "3D nonlinear elastodynamics: clamped beam (neo-Hookean); left ventricle (Guccione active-passive)",
+        "N": "Beam 3,075; LV 19,365 (refined 39,075)",
+        "Parameters": "Beam n_μ = 1 or 3; LV n_μ = 3",
+        "Training data": "50 params for POD basis + 200–300 for ROM snapshots",
+        "Latent k": "Beam {3–15}; LV {16–178}; headline 4 and 16",
+        "Baselines": "POD-Galerkin (no HR), POD-Galerkin-DEIM (multiple tolerances)",
+        "Metrics": "rel-L² time-averaged; FOM/ROM speedup; per-stage CPU time breakdown",
+        "Hyper-reduction": "DEIM (baseline) vs learned network (their method)",
+        "Hardware": "Intel i5-9600K CPU only, no GPU",
+        "Headline": "Table 7 (LV): DEIM m=303: 6× / 7.5e-3; Deep-HyROMnet: 3554× / 6.4e-2"
+      },
+      "what_to_borrow": "The 3D+hyper-reduction setup is the closest precedent to your work, even though the PDE is different. Their speedup/accuracy tradeoff tells you there is room between your 57× and DL-ROM's 16,000×."
+    }
+  ],
+  "takeaways": {
+    "title": "What to steal for your paper",
+    "points": [
+      "**Minimum baselines**: POD-Galerkin, POD-LSPG, POD-LSPG+HR. Every reviewer expects all three.",
+      "**Method-class baselines**: pick one from each — (a) NM-ROM with hyper-reduction = Kim-Choi 2022, (b) non-intrusive DL-ROM = Fresca-Manzoni 2022 (POD-DL-ROM), (c) latent ODE = gLaSDI, (d) quadratic manifold = Geelen-Wright-Willcox.",
+      "**Headline table format**: one row per PDE × one column per method × metrics = (rel-L², speedup, params, training time). Borrow from He-Choi gLaSDI.",
+      "**Pareto plot**: include one (rel-L² vs wall-time) sweeping hyper-reduction oversampling. Format from Cheung-Choi Fig 9.",
+      "**What makes your setup unusual**: 3D, elliptic Poisson (not advection), n_μ=3, and rigorous Jacobian-regularity framing. Lean into all four."
+    ]
+  }
+}
