@@ -18,7 +18,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Candidacy — Jacobian Regularity as a Universal NM-ROM Principle (Tahmid Awal)</title>
+<title>Candidacy — Architectural Guarantees for Learned PDE Solvers (Tahmid Awal)</title>
 <script>
   (function(){
     var t = localStorage.getItem("theme");
@@ -397,17 +397,20 @@ code, kbd {
     <div class="theme-toggles">
       <button id="theme-btn" class="theme-btn" title="Toggle dark mode">Dark</button>
     </div>
-    <h1>Jacobian Regularity as a Universal NM-ROM Principle</h1>
-    <p class="sub">PhD candidacy presentation &mdash; Tahmid Awal &mdash; NeurIPS 2026 submission (v2, extending <em>embedFEM</em> v1)</p>
+    <h1>Architectural Guarantees for Learned PDE Solvers</h1>
+    <p class="sub">PhD candidacy presentation &mdash; Tahmid Awal &mdash; Parasol Lab, Tufts University</p>
     <p class="meta">
-      <span><strong>Advisor group:</strong> Parasol Lab, Tufts University</span>
+      <span><strong>Program:</strong> a five-chapter thesis on bridging the training-to-deployment gap in learned scientific computing</span>
+    </p>
+    <p class="meta">
+      <span><strong>Chapter 1 in hand:</strong> NeurIPS 2026 submission (v2 of <em>embedFEM</em>)</span>
+      <span><strong>Chapter 2 in flight:</strong> AMR via quadtrees + parallel solving</span>
       <span><strong>Date:</strong> 2026-04-17</span>
-      <span><strong>Paper:</strong> ViT + LinearCP + EQ + latent Gauss&ndash;Newton, eight PDEs</span>
     </p>
     <p class="crumb">
-      <a href="literature-site/index.html">&larr; Literature room</a>
-      <a href="literature-site/experiments.html">Experiments walk</a>
-      <a href="literature-site/knobs.html">Knobs</a>
+      <a href="index.html">&larr; Literature room</a>
+      <a href="experiments.html">Experiments walk</a>
+      <a href="knobs.html">Knobs</a>
     </p>
   </div>
 </header>
@@ -417,21 +420,16 @@ code, kbd {
 <nav id="toc">
   <h3>Outline</h3>
   <ol id="toc-list">
-    <li><a href="#s1"><span class="num">1</span>Opening</a></li>
-    <li><a href="#s2"><span class="num">2</span>Why NM-ROM, why now</a></li>
-    <li><a href="#s3"><span class="num">3</span>The gap in prior work</a></li>
-    <li><a href="#s4"><span class="num">4</span>v1 finding: Jacobian regularity</a></li>
-    <li><a href="#s5"><span class="num">5</span>Architecture</a></li>
-    <li><a href="#s6"><span class="num">6</span>v2 claim: universality</a></li>
-    <li><a href="#s7"><span class="num">7</span>Headline results</a></li>
-    <li><a href="#s8"><span class="num">8</span>The knobs: tunable Pareto</a></li>
-    <li><a href="#s9"><span class="num">9</span>Architecture ablations</a></li>
-    <li><a href="#s10"><span class="num">10</span>Formal result</a></li>
-    <li><a href="#s11"><span class="num">11</span>Contributions</a></li>
-    <li><a href="#s12"><span class="num">12</span>Limitations</a></li>
-    <li><a href="#s13"><span class="num">13</span>Future work</a></li>
-    <li><a href="#s14"><span class="num">14</span>Q&amp;A bank</a></li>
-    <li><a href="#s15"><span class="num">15</span>Closing</a></li>
+    <li><a href="#s1"><span class="num">1</span>The bigger picture</a></li>
+    <li><a href="#s2"><span class="num">2</span>The thesis, in one sentence</a></li>
+    <li><a href="#s3"><span class="num">3</span>Why this is a CS problem</a></li>
+    <li><a href="#s4"><span class="num">4</span>Chapter 1 &mdash; Jacobian regularity</a></li>
+    <li><a href="#s5"><span class="num">5</span>Chapter 2 &mdash; AMR + parallel</a></li>
+    <li><a href="#s6"><span class="num">6</span>Chapter 3 &mdash; Constraint preservation</a></li>
+    <li><a href="#s7"><span class="num">7</span>Chapter 4 &mdash; Error certification</a></li>
+    <li><a href="#s8"><span class="num">8</span>Chapter 5 &mdash; Synthesis</a></li>
+    <li><a href="#s9"><span class="num">9</span>Timeline</a></li>
+    <li><a href="#s10"><span class="num">10</span>Q&amp;A bank</a></li>
     <li><a href="#claims"><span class="num">&#9888;</span>Claims to verify</a></li>
   </ol>
 </nav>
@@ -440,136 +438,113 @@ code, kbd {
 
 <!-- ============================================================ -->
 <section class="slide" id="s1">
-  <h2><span class="num">1</span>Opening</h2>
+  <h2><span class="num">1</span>The bigger picture</h2>
   <div class="transcript">
-    <p>Good afternoon. I'm Tahmid Awal, a PhD candidate with the Parasol Lab at Tufts. Today I'm walking you through a paper I've submitted to NeurIPS 2026. The short version is this: nonlinear-manifold reduced-order models &mdash; NM-ROMs &mdash; are a promising way to speed up PDE solvers by a factor of ten to a hundred, but whether they work at all comes down to a single property of the decoder network that the field has been consistently mis-framing. That property is not reconstruction accuracy. It's Jacobian regularity.</p>
-    <p>My v1 paper, <em>embedFEM</em>, showed this for 3D Poisson. I found the failure mode, I built a small architectural fix &mdash; a linear skip connection inside a CP-tensor decoder &mdash; and I got fifty-seven times speedup at half a percent relative error. The v2 paper, which is what I'll spend most of today on, shows that the same principle, the same architecture, the same training recipe generalizes: eight PDE benchmarks across elliptic, parabolic, and advection-dominated regimes, in two and three dimensions, up to seven hundred thousand degrees of freedom. One recipe, one knob set, one Pareto frontier per PDE. That's the thesis.</p>
+    <p>Good afternoon. I want to start at the level the committee actually cares about &mdash; not what I did in the last paper, but what problem I think is worth five years of my PhD to attack. The problem is this. Computational simulation of physical systems &mdash; fluids, heat, electromagnetics, solid mechanics, climate, biomedical &mdash; is a multi-billion-dollar activity, and it's being rebuilt on learned components. Neural surrogates are replacing classical solvers at every level of the stack: whole-solve surrogates like FNO and DeepONet, learned sub-grid closures for turbulence, learned reduced-order models for design-space exploration. The neural versions are already winning on inference speed. They are losing, badly, on everything else.</p>
+    <p>The gap is not a gap in accuracy on training data &mdash; everyone's surrogate reaches a percent or two. The gap is in what classical numerical analysis has been quietly building for two hundred years: convergence proofs, stability conditions, error bounds, constraint preservation, scaling to adaptive meshes, scaling to thousands of MPI ranks. Those are what make classical solvers trustworthy at deployment. Neural surrogates almost none of these. This is why the FDA will not certify a neural cardiac model. It's why the DOE will not put a learned closure in a climate run that matters. The field is stuck at demos.</p>
+    <p>My thesis is about fixing that &mdash; systematically, chapter by chapter, one guarantee at a time. I think this is one of the most consequential open problems in scientific computing right now, and I want to spend my PhD working on it.</p>
   </div>
 
   <div class="visual">
-    <div class="visual-label">one-sentence thesis</div>
-    <div class="prop">
-      <div class="prop-head">Thesis</div>
-      <p>The decoder Jacobian, not reconstruction accuracy, determines whether latent Gauss&ndash;Newton in an NM-ROM converges &mdash; and a linear-skip CP-tensor decoder, a ViT encoder, and Empirical-Quadrature hyper-reduction are the minimal architectural ingredients that make this work across elliptic, parabolic, and advection-dominated PDEs in 2D and 3D.</p>
+    <div class="visual-label">the two gaps the thesis attacks</div>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 12px 0;">
+      <div class="prop" style="margin:0;">
+        <div class="prop-head">The trust gap</div>
+        <p>Training minimizes reconstruction error. Deployment needs Jacobian regularity, spectral stability, constraint preservation, error certification &mdash; properties the training loss does not enforce. Today, the learned surrogate works or doesn't work, and we find out the hard way.</p>
+      </div>
+      <div class="prop" style="margin:0;">
+        <div class="prop-head">The scale gap</div>
+        <p>Learned ROMs have been demonstrated almost entirely at small, uniform, single-node scale &mdash; often a few tens of thousands of degrees of freedom, always a fixed grid. Real scientific computing runs at millions of degrees of freedom on adaptively refined meshes, distributed across thousands of MPI ranks. These two worlds have not met.</p>
+      </div>
     </div>
   </div>
 </section>
 
 <!-- ============================================================ -->
 <section class="slide" id="s2">
-  <h2><span class="num">2</span>Why NM-ROM, why now</h2>
+  <h2><span class="num">2</span>The thesis, in one sentence</h2>
   <div class="transcript">
-    <p>Let me set the stakes. Simulating PDEs &mdash; fluids, heat, electromagnetics &mdash; costs real money and real time. A single 3D Navier&ndash;Stokes solve at an engineering-grade resolution is minutes-to-hours on a cluster. When you're doing design-space exploration, uncertainty quantification, or real-time control, you need thousands of solves. That's where reduced-order models come in.</p>
-    <p>Classical ROMs use proper orthogonal decomposition &mdash; a linear subspace fit to snapshots. POD is fast and has beautiful error bounds. But POD dies on a problem called the Kolmogorov $n$-width: for any advection-dominated flow, the best-possible linear subspace needs more and more dimensions to capture a sharp front as it moves, and you lose the compression. This is a theorem, not a preference.</p>
-    <p>The response, starting with Lee and Carlberg's 2020 JCP paper, is to replace the linear subspace with a nonlinear manifold parameterized by a neural-network decoder. The math works: on problems where POD needs fifty modes for one-percent error, a nonlinear manifold can hit the same target in ten, sometimes five. That's the promise. The catch is that training the decoder and deploying it inside a PDE solver are two very different problems, and the second one is where this paper lives.</p>
+    <p>Here's the claim the whole PhD rests on, in one sentence. I'll unpack it for the next thirty minutes, but this is what I want you to be able to state back to me when I'm done.</p>
   </div>
 
-  <div class="visual">
-    <div class="visual-label">equations: the setup and the $n$-width obstruction</div>
-    <div class="eqwrap">
-      $$
-      \text{FOM:}\quad K\,\mathbf{u} = \mathbf{F}, \quad \mathbf{u}\in\mathbb{R}^N, \; N=\mathcal{O}(10^5\!-\!10^6).
-      $$
-      $$
-      \text{POD-ROM:}\quad \mathbf{u}\approx V\,\mathbf{z},\; V\in\mathbb{R}^{N\times k},\; k\ll N;\quad
-      \text{NM-ROM:}\quad \mathbf{u}\approx D(\mathbf{z}),\; D:\mathbb{R}^k\to\mathbb{R}^N.
-      $$
-      $$
-      \text{Kolmogorov $n$-width:}\quad d_n(\mathcal{M}) := \inf_{\dim V \le n}\; \sup_{\mathbf{u}\in\mathcal{M}}\; \|\mathbf{u} - P_V \mathbf{u}\|.
-      $$
-    </div>
-    <p style="font-size:14px;color:var(--muted);margin-top:4px;">For advection-dominated $\mathcal{M}$, $d_n$ decays algebraically, not exponentially &mdash; POD plateaus. Nonlinear manifolds sidestep this because they don't restrict $D$ to be linear in $\mathbf{z}$.</p>
+  <div class="prop">
+    <div class="prop-head">Thesis</div>
+    <p>Learned reduced-order PDE solvers succeed in deployment only when the learned components' architecture satisfies structural properties required by the online solver &mdash; properties distinct from and sometimes orthogonal to training-time reconstruction accuracy &mdash; and the systematic identification, architectural guarantee, and computational scaling of those properties is the path from neural surrogates as research artifacts to neural surrogates as engineering tools.</p>
   </div>
 
-  <div class="qa">
-    <div class="qa-head">anticipated</div>
-    <p class="q">Why not just use a neural operator (FNO, DeepONet)?</p>
-    <p class="a">Neural operators regress solution from parameters directly &mdash; no PDE projection at inference, so no physics consistency and no principled parameter generalization. NM-ROM projects the true PDE residual onto a learned manifold; the solver is doing physics, not regression. Different tool for a different job.</p>
+  <div class="transcript">
+    <p>Three claims stacked up in that sentence. First: training objective and deployment requirement are different things. Second: the fix should be <em>architectural</em> &mdash; baked into the network structure, not into the loss or the solver &mdash; because architectural guarantees hold for all inputs, always. Third: the research program is not one architecture; it is a systematic search across the properties that matter, with one chapter per property class. I'll walk through the five chapters next. One is done. One is in progress. Three are ahead of me.</p>
   </div>
 </section>
 
 <!-- ============================================================ -->
 <section class="slide" id="s3">
-  <h2><span class="num">3</span>The gap in prior work</h2>
+  <h2><span class="num">3</span>Why this is a CS problem, and why now</h2>
   <div class="transcript">
-    <p>There is a whole family of NM-ROM papers, and they each make progress on one axis while leaving another open. Kim and Choi, 2022, introduced masked shallow MLP decoders that support what's called partial evaluation &mdash; you can query a single grid node cheaply, which is what hyper-reduction needs. But their architecture is hand-tuned per-PDE and the Jacobian conditioning is treated implicitly. Diaz and Choi, 2024, extended this to a fast gradient-projection solver, same architectural limitations. Geelen, Wright, and Willcox, 2022, use a quadratic manifold &mdash; structured, analyzable, but the manifold geometry is fixed a priori and doesn't carry across PDE families. Barnett and Farhat, 2022, reach seventeen million degrees of freedom but with ECSW hyper-reduction and a quadratic manifold, not a learned decoder. Fresca and Manzoni's DL-ROM family is non-intrusive &mdash; a regression, no PDE projection.</p>
-    <p>So there's a four-dimensional gap: an architectural principle that's explicit and portable, hyper-reduction compatibility, cold-start solver convergence, and breadth across PDE regimes. No prior paper hits all four. This paper is a claim to close that gap.<a href="#claims" class="flag" title="Flagged claim">&#9888;1</a></p>
+    <p>A question I want to address before the chapters: is this really a computer science thesis, or am I doing applied math? My answer is that this is exactly the kind of problem CS is good at and applied math isn't. Applied math gives you the numerical-analysis theorems &mdash; Lax-Milgram, C&eacute;a, Babu&scaron;ka-Brezzi, the Strang lemma. Every one of them says &ldquo;if your discretization satisfies property $X$, then the error is bounded by $Y$.&rdquo; That's a hundred-year program, and it's beautiful. CS takes that template and asks a different question: what does it take to <em>build</em> a system whose architecture guarantees property $X$ by construction, at the scales modern ML operates at?</p>
+    <p>Three reasons the time is right. Economic: every simulation-heavy industry &mdash; aerospace, biomedical, materials, climate &mdash; is trying to adopt ML surrogates and getting burned by surrogates that work in the demo and fail in production. Scientific: neural surrogates have no error-analysis theorems comparable to POD-Galerkin, and the field knows it &mdash; you can't certify what you can't bound. Methodological: the ML community has converged on &ldquo;scale plus data equals competence,&rdquo; and the intrusive-learned-solver world has spent five years showing that for PDEs this doesn't work. Architectural constraints beat data scaling, for a structured reason. That's a CS insight worth pressing on.</p>
   </div>
 
   <div class="visual">
-    <div class="visual-label">differentiation grid (v2 paper &sect;12)</div>
-    <table>
-      <thead>
-        <tr>
-          <th>Method</th>
-          <th>Decoder</th>
-          <th>HR type</th>
-          <th>Formal Jacobian claim</th>
-          <th>Multi-PDE same recipe</th>
-          <th>Cold-start GN</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr><td>Kim&ndash;Choi 2022</td><td>masked shallow MLP</td><td>empirical</td><td>no</td><td>no</td><td>partial</td></tr>
-        <tr><td>Diaz&ndash;Choi 2024</td><td>masked MLP</td><td>fast GN</td><td>no</td><td>no</td><td>partial</td></tr>
-        <tr><td>Geelen&ndash;Willcox 2022</td><td>quadratic manifold</td><td>ECSW</td><td>no</td><td>partial (linear + quadratic)</td><td>yes</td></tr>
-        <tr><td>Barnett&ndash;Farhat 2022</td><td>quadratic manifold</td><td>ECSW</td><td>no</td><td>no</td><td>yes</td></tr>
-        <tr><td>Fresca&ndash;Manzoni 2022 (DL-ROM)</td><td>CNN autoencoder</td><td>n/a (non-intrusive)</td><td>no</td><td>no</td><td>n/a</td></tr>
-        <tr class="headline"><td><strong>This work</strong></td><td>ViT + LinearCP</td><td>EQ</td><td>yes (bounded $\kappa$)</td><td>yes (8 PDEs)</td><td>yes (elliptic)</td></tr>
-      </tbody>
-    </table>
+    <div class="visual-label">three framings the committee might respond to</div>
+    <div class="contrib-list">
+      <div class="contrib">
+        <strong>Economic.</strong> Learned surrogates are failing in production because training rewards one thing and deployment needs another. Closing the gap is the path to certified surrogates.
+      </div>
+      <div class="contrib">
+        <strong>Scientific.</strong> Classical numerical analysis has theorems of the form &ldquo;discretization property $\Rightarrow$ error bound.&rdquo; Neural surrogates need the same. Each thesis chapter is one such theorem.
+      </div>
+      <div class="contrib">
+        <strong>Methodological.</strong> Architectural constraints, correctly chosen, beat data scaling on structured problems. This is a CS lesson that generalizes beyond PDE surrogates.
+      </div>
+    </div>
   </div>
 </section>
 
 <!-- ============================================================ -->
 <section class="slide" id="s4">
-  <h2><span class="num">4</span>The v1 finding &mdash; Jacobian regularity</h2>
+  <h2><span class="num">4</span>Chapter 1 &mdash; Jacobian regularity (the NeurIPS paper, done)</h2>
   <div class="transcript">
-    <p>Here is the core technical argument. NM-ROM solves the reduced PDE residual in the latent variable $\mathbf{z}$, not in the full state $\mathbf{u}$. Gauss&ndash;Newton is the standard tool. Each iteration uses the decoder Jacobian $J = \partial D/\partial \mathbf{z}$ in two places &mdash; once in the gradient, once squared in the Hessian. So the Gauss&ndash;Newton Hessian is $J^\top K^\top K J$, and its conditioning is dominated by $J$.</p>
-    <p>Now suppose the decoder is a deep MLP feeding into a CP-tensor output. You can hit near-zero training error, reconstruct validation samples at one percent. But the MLP's Jacobian varies wildly across latent space. In my v1 Poisson-3D experiments, two of four test cases &mdash; whose target $\mathbf{z}^\star$ happened to land in ill-conditioned regions &mdash; diverged from cold-start initialization. Not reconstruction divergence. Solver divergence. Same decoder, same weights, same training loss &mdash; some test cases work, some don't.</p>
-    <p>The fix is a linear skip. Split $\mathbf{h}(\mathbf{z})$, the rank-code feeding the CP tensor, into $W_{\text{dir}} \mathbf{z}$ plus a shallow nonlinear correction. Its Jacobian is then $W_{\text{dir}}$ plus a perturbation. $W_{\text{dir}}$ is constant, full-rank after training, and load-bearing for stability. The nonlinear part adds expressiveness without touching the Jacobian anchor. Four out of four cases converge. That's v1's headline.</p>
+    <p>This is the chapter I have in hand. It is the first concrete instance of the program: identify a property the online solver needs, design an architectural device that guarantees it, validate the device broadly enough to show the principle is not problem-specific. The property is Jacobian regularity of the decoder. The architectural device is a linear skip connection over a CP-tensor decoder. The validation is eight PDE benchmarks across elliptic, parabolic, and advection-dominated regimes, in 2D and 3D, at full-order dimensions up to about seven hundred thousand.</p>
+    <p>Why this property, why this device, why this breadth &mdash; I'll go through quickly. The slower walkthrough lives on the paper page and I'm happy to take any of it in Q&amp;A.</p>
+  </div>
+
+  <h3>The failure mode that started this chapter</h3>
+  <div class="transcript">
+    <p>I trained a CP-tensor decoder for 3D Poisson. It reached 1% reconstruction error on held-out data. I ran the online Gauss&ndash;Newton solve on four unseen parameter triples, cold-start, from $\mathbf{z} = \mathbf{0}$. Two of the four diverged. The difference between the two that converged and the two that didn't was not the training data, not the test distribution, not the optimizer. It was that cases 2 and 3 corresponded to regions of latent space where the decoder Jacobian was ill-conditioned, and Gauss&ndash;Newton could not traverse those regions from a cold start. Reconstruction accuracy and Jacobian regularity are independent properties. The field had been optimizing the former and hoping for the latter. I thought this was worth making explicit.</p>
+  </div>
+
+  <h3>What Gauss&ndash;Newton actually uses</h3>
+  <div class="transcript">
+    <p>The online solver minimizes the PDE residual $\Phi(\mathbf{z}) = \tfrac{1}{2}\|K D(\mathbf{z}) - \mathbf{F}\|^2$ in the latent variable $\mathbf{z}$. One Gauss&ndash;Newton step is</p>
   </div>
 
   <div class="visual">
-    <div class="visual-label">Gauss&ndash;Newton derivation &mdash; minimal</div>
-    <div class="eqwrap">
-      $$\Phi(\mathbf{z}) = \tfrac{1}{2}\|r(\mathbf{z})\|^2,\quad r(\mathbf{z}) = K D(\mathbf{z}) - \mathbf{F}.$$
-      $$\nabla\Phi = J^\top K^\top r,\qquad H_{\text{GN}} = J^\top K^\top K J.$$
-      $$(J^\top K^\top K J)\,\Delta\mathbf{z} \;=\; -J^\top K^\top r(\mathbf{z}),\quad
-        \mathbf{z}\leftarrow \mathbf{z} + \Delta\mathbf{z}.$$
-    </div>
-    <p style="font-size:14px;color:var(--muted);margin-top:4px;">If $J$ loses column rank anywhere along the iterate path, $H_{\text{GN}}$ becomes singular, $\Delta\mathbf{z}$ blows up, GN diverges.</p>
-  </div>
-
-  <div class="visual">
-    <div class="visual-label">The LinearCP fix (v1 &sect;6)</div>
     <div class="eqwrap">
       $$
-      \mathbf{h}(\mathbf{z}) \;=\; \underbrace{W_{\text{dir}}\,\mathbf{z}}_{\text{linear skip (constant }J\text{)}} \;+\; \underbrace{W_{\text{rank}}\,\sigma\!\bigl(W_2\,\sigma(W_1\mathbf{z})\bigr)}_{\text{shallow MLP correction}}
-      $$
-      $$
-      \frac{\partial\mathbf{h}}{\partial\mathbf{z}} \;=\; W_{\text{dir}} \;+\; \frac{\partial\mathbf{h}_{\text{nl}}}{\partial\mathbf{z}}
+      (J^\top K^\top K J)\,\Delta\mathbf{z} \;=\; -J^\top K^\top (K D(\mathbf{z}) - \mathbf{F}), \qquad
+      J = \partial D / \partial \mathbf{z} \in \mathbb{R}^{N\times k}.
       $$
     </div>
   </div>
 
-  <div class="qa">
-    <div class="qa-head">anticipated</div>
-    <p class="q">Why is Jacobian regularity a better framing than reconstruction accuracy?</p>
-    <p class="a">Because reconstruction accuracy is evaluated on training samples the encoder actually produced $\mathbf{z}$ for. The solver evaluates the decoder at intermediate $\mathbf{z}$ values along the Gauss&ndash;Newton iterate path &mdash; places that no training sample ever visited. Reconstruction error tells you about the manifold near the data; solver convergence depends on Jacobian behavior between the origin and the data. Two different questions. The two-of-four divergence on v1 proves they decouple in practice.</p>
-  </div>
-</section>
-
-<!-- ============================================================ -->
-<section class="slide" id="s5">
-  <h2><span class="num">5</span>The architecture</h2>
   <div class="transcript">
-    <p>Here is the pipeline end to end. The encoder is a Vision Transformer: patchify the 3D field into small cubes, linearly embed, add positional encoding, four transformer blocks with mean pooling, linear projection down to a latent code $\mathbf{z}\in\mathbb{R}^k$ with $k$ between 12 and 40 depending on the PDE. I use ViT specifically because Poisson solutions are globally coherent sinusoids &mdash; changing any mode changes the whole field &mdash; and CNNs with stride-2 convolutions can't grow a global receptive field fast enough on the training-data budget we have. I tried. It failed.</p>
-    <p>The decoder is LinearCP: $\mathbf{z}$ goes through a linear skip plus a two-layer nonlinear path to produce a rank code $\mathbf{h}\in\mathbb{R}^R$ with $R$ around 512 or 768. Then a CP-tensor contraction turns $\mathbf{h}$ plus three learned 1D basis matrices $W_x, W_y, W_z$ into the output field. The CP contraction is what gives you $\mathcal{O}(R)$ per-node cost, which is what Empirical Quadrature needs. The solver is latent Gauss&ndash;Newton on the EQ-sampled residual &mdash; a handful of nodes, usually 200 out of 30 to 700 thousand &mdash; and it converges in four to eight iterations.</p>
+    <p>The decoder Jacobian $J$ appears twice per step. If $J$ loses column rank anywhere along the iterate path, the reduced Hessian $J^\top K^\top K J$ becomes near-singular and Gauss&ndash;Newton diverges. Whether the solver works is a statement about the behavior of $J$ as a function of $\mathbf{z}$ &mdash; not about its values at training points.</p>
   </div>
 
+  <h3>The architectural fix, stated as a proposition</h3>
+  <div class="prop">
+    <div class="prop-head">Proposition 1 (Chapter 1)</div>
+    <p>Let the decoder use the linear-skip rank code $\mathbf{h}(\mathbf{z}) = W_{\text{dir}}\mathbf{z} + W_{\text{rank}}\,\sigma(W_2\,\sigma(W_1\mathbf{z}))$ followed by a CP-tensor contraction. If $W_{\text{dir}}$ has full column rank after training, then the Gauss&ndash;Newton Hessian $J^\top K^\top K J$ has bounded condition number uniformly across $\mathbf{z}\in\mathbb{R}^k$.</p>
+  </div>
+
+  <div class="transcript">
+    <p>The proof is in the paper's appendix B. The intuition is that the linear skip $W_{\text{dir}}\mathbf{z}$ contributes a constant, full-rank term to the rank-code Jacobian $\partial \mathbf{h}/\partial\mathbf{z}$, which the nonlinear correction can perturb but cannot cancel. A deep MLP without the skip has no such guarantee; its Jacobian can and does collapse in test-time regions of latent space.</p>
+  </div>
+
+  <h3>Architecture and breadth of validation</h3>
   <div class="visual">
-    <div class="visual-label">Figure: v1 architecture (paper &sect;8 TikZ, rendered as SVG)</div>
+    <div class="visual-label">Figure: Chapter 1 architecture</div>
     <div class="archdiag">
       <svg viewBox="0 0 820 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ViT plus LinearCP architecture">
         <style>
@@ -592,370 +567,274 @@ code, kbd {
             <path d="M0,0 L10,5 L0,10 z" fill="#c42d8a"/>
           </marker>
         </defs>
-
         <text x="90" y="20" class="t-head">Encoder (ViT)</text>
         <text x="520" y="20" class="t-head-dec">Decoder (LinearCP)</text>
-
-        <!-- encoder column -->
         <rect class="box" x="40" y="40" width="180" height="34"/>
-        <text x="130" y="62" class="t" text-anchor="middle">$\mathbf{u}\in\mathbb{R}^{N^3}$ (input field)</text>
-
+        <text x="130" y="62" class="t" text-anchor="middle">$\mathbf{u}\in\mathbb{R}^{N^d}$</text>
         <rect class="box" x="40" y="90" width="180" height="34"/>
         <text x="130" y="112" class="t" text-anchor="middle">Patchify (patch=8)</text>
-
         <rect class="box" x="40" y="140" width="180" height="34"/>
         <text x="130" y="162" class="t" text-anchor="middle">Linear Embed + Pos Emb</text>
-
         <rect class="box" x="40" y="190" width="180" height="34"/>
         <text x="130" y="212" class="t" text-anchor="middle">TransformerBlock x 4</text>
-
         <rect class="box" x="40" y="240" width="180" height="34"/>
         <text x="130" y="262" class="t" text-anchor="middle">Mean Pool</text>
-
         <rect class="box" x="40" y="290" width="180" height="34"/>
         <text x="130" y="312" class="t" text-anchor="middle">Linear &rarr; $\mathbf{z}\in\mathbb{R}^{k}$</text>
-
         <path class="arr" d="M130,74 L130,90"/>
         <path class="arr" d="M130,124 L130,140"/>
         <path class="arr" d="M130,174 L130,190"/>
         <path class="arr" d="M130,224 L130,240"/>
         <path class="arr" d="M130,274 L130,290"/>
-
-        <!-- bridge z -->
         <path class="arr-skip" d="M220,307 L380,307"/>
         <path class="arr-skip" d="M220,307 C290,307 300,60 380,60"/>
         <text x="300" y="300" class="t-tiny">$\mathbf{z}$ feeds both paths</text>
-
-        <!-- decoder column -->
         <rect class="box-dec" x="380" y="40" width="200" height="34"/>
         <text x="480" y="62" class="t" text-anchor="middle">$W_1\mathbf{z}$ &rarr; swish</text>
-
         <rect class="box-dec" x="380" y="90" width="200" height="34"/>
         <text x="480" y="112" class="t" text-anchor="middle">$W_2$ &rarr; swish</text>
-
         <rect class="box-dec" x="380" y="140" width="200" height="34"/>
         <text x="480" y="162" class="t" text-anchor="middle">$W_{\text{rank}}$ &rarr; $\mathbf{h}_{\text{nl}}\in\mathbb{R}^R$</text>
-
         <rect class="box-dec" x="380" y="290" width="200" height="34"/>
         <text x="480" y="312" class="t" text-anchor="middle">$W_{\text{dir}}\mathbf{z}$ (linear skip)</text>
-
         <rect class="box-dec" x="380" y="215" width="200" height="34"/>
         <text x="480" y="237" class="t" text-anchor="middle">$\mathbf{h}=\mathbf{h}_{\text{lin}}+\mathbf{h}_{\text{nl}}$</text>
-
         <path class="arr" d="M480,74 L480,90"/>
         <path class="arr" d="M480,124 L480,140"/>
         <path class="arr" d="M480,174 C480,195 480,200 480,215"/>
         <path class="arr" d="M480,290 C480,275 480,260 480,249"/>
-
         <rect class="box-dec" x="620" y="215" width="180" height="60"/>
         <text x="710" y="238" class="t" text-anchor="middle">CP contraction</text>
-        <text x="710" y="256" class="t-tiny" text-anchor="middle">$\sum_r h_r W_x[r,i] W_y[r,j] W_z[r,k]$</text>
-
+        <text x="710" y="256" class="t-tiny" text-anchor="middle">$\sum_r h_r W_x[r,i] W_y[r,j] W_z[r,\ell]$</text>
         <path class="arr" d="M580,237 L620,237"/>
-
         <rect class="box-dec" x="620" y="290" width="180" height="34"/>
-        <text x="710" y="312" class="t" text-anchor="middle">$\hat{\mathbf{u}}\in\mathbb{R}^{N^3}$</text>
-
+        <text x="710" y="312" class="t" text-anchor="middle">$\hat{\mathbf{u}}\in\mathbb{R}^{N^d}$</text>
         <path class="arr" d="M710,275 L710,290"/>
-
-        <text x="630" y="28" class="t-tiny">ViT preserves Jacobian regularity;</text>
-        <text x="630" y="42" class="t-tiny">CP preserves partial evaluation.</text>
+        <text x="630" y="28" class="t-tiny">Linear skip: constant-Jacobian anchor.</text>
+        <text x="630" y="42" class="t-tiny">CP: partial evaluation at $\mathcal{O}(R)$ per node.</text>
       </svg>
     </div>
-    <p style="font-size:13px; color: var(--muted); margin-top:4px;">Encoder ~240K params, decoder ~254K params, total ~494K. Training: 100k steps, batch 32, AdamW wd=5e-4, cosine schedule to 1e-3.</p>
+  </div>
+
+  <div class="transcript">
+    <p>I validated this architecture on eight PDE benchmarks: Poisson in 2D and 3D, Heat in 2D and 3D, Burgers in 2D and 3D, Navier&ndash;Stokes in 2D and 3D. Same encoder, same decoder, same training recipe, same six-knob tuning procedure. Full-order dimensions range from about four thousand (Poisson-2D at $64^2$) to about seven hundred thousand (Burgers-3D at $64^3$). Elliptic cold-start. Parabolic warm-start. Advection-dominated with multi-channel extension. One recipe, one Pareto frontier per PDE.<a href="#claims" class="flag" title="flag 1">&#9888; 1</a></p>
+  </div>
+
+  <div class="visual">
+    <div class="visual-label">headline operating points, Chapter 1 (verified from results.tsv)</div>
+    <table>
+      <thead>
+        <tr><th>PDE</th><th class="num">FOM dim</th><th class="num">Rel-$L^2$</th><th class="num">Speedup</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Poisson-2D-64</td>  <td class="num">3,844</td>   <td class="num">4.69e-4</td> <td class="num">27.4&times;</td> <td>landed</td></tr>
+        <tr><td>Poisson-2D-256</td> <td class="num">64,516</td>  <td class="num">6.33e-3</td> <td class="num">38.5&times;</td> <td>landed</td></tr>
+        <tr><td>Poisson-3D-32</td>  <td class="num">27,000</td>  <td class="num">5.36e-3</td> <td class="num">48.3&times;</td> <td>landed (headline)</td></tr>
+        <tr><td>Poisson-3D-64</td>  <td class="num">238,328</td> <td class="num">8.89e-3</td> <td class="num">15.3&times;</td> <td>landed (best acc)</td></tr>
+        <tr><td>Poisson-3D-128</td> <td class="num">~2.0e6</td>  <td class="num">1.61e-2</td> <td class="num">23.6&times;</td> <td>landed</td></tr>
+        <tr><td>Heat-3D-64 ACC</td> <td class="num">238,328</td> <td class="num">6.46e-2</td> <td class="num">12.07&times;</td><td>landed</td></tr>
+        <tr><td>Heat-3D-64 FAST</td><td class="num">238,328</td> <td class="num">8.09e-2</td> <td class="num">13.61&times;</td><td>landed</td></tr>
+        <tr class="in-flight"><td>Burgers-3D-32</td><td class="num">81,000</td><td class="num">~1.0e-2</td><td class="num">~10&times;</td><td>in flight</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="transcript">
+    <p>What I want to emphasize is not the numbers themselves &mdash; the numbers are in the paper &mdash; but that a single architecture trained with a single recipe produces an accuracy&ndash;speedup trade on every PDE I tested. The principle is not Poisson-specific. It is not 3D-specific. It is not elliptic-specific. That is what makes it a principle rather than a trick.</p>
+  </div>
+
+  <div class="qa">
+    <div class="qa-head">Anticipated question</div>
+    <p class="q">Your validation is eight benchmarks, but every benchmark is a structured grid with smooth solutions. What happens when you hit shocks, sharp fronts, unstructured meshes?</p>
+    <p class="a">Exactly the right question, and it's why Chapter 2 is about AMR with quadtree decompositions. Chapter 1 establishes the principle on structured grids; Chapter 2 shows the principle survives when the grid adapts to the solution. I'll walk through that next.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="slide" id="s5">
+  <h2><span class="num">5</span>Chapter 2 &mdash; AMR via quadtrees + parallel solving (in flight)</h2>
+  <div class="transcript">
+    <p>Chapter 2 is where the thesis stops being a single-machine single-grid exercise and meets real scientific computing. Two connected problems: adaptive mesh refinement, and parallel solving. Both are things every classical PDE solver at scale already does. Both are things no learned-decoder ROM in the literature has done well. This chapter builds the machinery so that Chapters 3, 4, and 5 can assume it.</p>
+  </div>
+
+  <h3>What AMR means for a learned decoder</h3>
+  <div class="transcript">
+    <p>Classical AMR is straightforward in principle: refine the grid where the solution has structure, coarsen where it doesn't. Octrees in 3D, quadtrees in 2D. The refinement criterion is a local error estimator; the data structure is a tree; the solver at each level respects the tree topology. This is seventy years of numerical analysis. A learned decoder has none of it. The decoder, as built in Chapter 1, has a fixed output grid. You trained it at $64^3$; it outputs at $64^3$. If the solution has a sharp gradient in one cubic centimeter and smooth behavior everywhere else, you pay for the full $64^3$ output &mdash; you cannot spend your budget where it's needed.</p>
+    <p>The question Chapter 2 asks is: how do you train and deploy a decoder whose output grid is a quadtree, not a uniform lattice? There are at least three distinct architectural directions, and a chapter of research is figuring out which one is right.</p>
+  </div>
+
+  <div class="visual">
+    <div class="visual-label">three architectural directions for quadtree-AMR decoders</div>
+    <div class="contrib-list">
+      <div class="contrib">
+        <strong>Hierarchical CP.</strong> One CP core per tree level, with level-to-level correction terms. Output at a leaf is the sum of coarse-level CP contractions down the path. Natural extension of Chapter 1's CP machinery; clean per-level Jacobian bounds; but expressiveness at fine levels is tied to coarse-level rank.
+      </div>
+      <div class="contrib">
+        <strong>Coordinate-based decoder.</strong> Replace $\hat{u}[i,j,\ell]$ with $\hat{u}(x,y,z)$ &mdash; a learned function of a continuous query point, SIREN- or NeRF-style. Evaluates at any leaf cell for free. Loses the CP partial-evaluation structure; need a different path to the Jacobian guarantee.
+      </div>
+      <div class="contrib">
+        <strong>Multi-resolution latent.</strong> One latent code per tree level; solve latent Gauss&ndash;Newton hierarchically coarse-to-fine. Matches how multigrid solvers already work classically. Chapter 1's architecture wraps each level.
+      </div>
+    </div>
+  </div>
+
+  <div class="transcript">
+    <p>My current bet is on hierarchical CP. It preserves the $\mathcal{O}(R)$-per-node partial evaluation that makes Empirical Quadrature cheap, and I can state a Jacobian-regularity analog of Proposition 1 for each tree level. The cost structure also composes: quadtree partitioning via Z-order or Morton curves gives you a natural parallel decomposition, which sets up the parallel-solving half of the chapter.</p>
+  </div>
+
+  <h3>What parallelism looks like in this setting</h3>
+  <div class="transcript">
+    <p>The online Gauss&ndash;Newton solve in Chapter 1 is sequential: evaluate the decoder at the EQ sample nodes, assemble the residual and the Jacobian rows, solve a small $k\times k$ system, update $\mathbf{z}$. The per-iteration cost is independent of $N$, which is what gives you the speedup. But the per-node evaluation, the residual assembly, and the Jacobian-row assembly are all embarrassingly parallel across the sample nodes. Parallelism here is not about making the latent solve bigger; it is about making the data-assembly phase fit on a modern compute substrate &mdash; multi-GPU on a single node, eventually MPI across nodes.</p>
+    <p>I am deliberately not committing to a specific target scale &mdash; single-node multi-GPU versus MPI across a cluster &mdash; at this stage. The chapter's deliverables are the architectural pieces and the performance analysis; the scale target is set by the PDE benchmarks we pick.</p>
+  </div>
+
+  <h3>Why this chapter is the load-bearing one in the thesis</h3>
+  <div class="transcript">
+    <p>Without Chapter 2, Chapter 1's eight-PDE result is a lovely methodological contribution that lives on $128^3$ and never reaches a problem a practitioner cares about. With Chapter 2, the architecture inherits the scaling pathway that classical solvers have earned. That is the difference between a PhD that a theory committee member can love and a PhD that an HPC-systems committee member can also love. I want both.</p>
+  </div>
+
+  <div class="qa">
+    <div class="qa-head">Anticipated question</div>
+    <p class="q">You listed three architectural directions for AMR. How long do you give yourself to pick one?</p>
+    <p class="a">I have a first-cut hierarchical CP implementation running now on 2D Poisson with a quadtree refined at a hard-coded pattern. The chapter's first milestone is: pick a data-driven refinement criterion, demonstrate end-to-end solve on a problem where AMR actually helps (sharp-front Burgers is the canonical candidate), and submit a paper within six months. If hierarchical CP blocks on expressiveness, coordinate-based is the fallback. I would not commit more than nine months before publishing the first AMR result.</p>
   </div>
 </section>
 
 <!-- ============================================================ -->
 <section class="slide" id="s6">
-  <h2><span class="num">6</span>The v2 claim: universality</h2>
+  <h2><span class="num">6</span>Chapter 3 &mdash; Constraint preservation</h2>
   <div class="transcript">
-    <p>This is where v2 earns its NeurIPS slot. v1 was one PDE, one physics regime, one spatial dimension. The natural question &mdash; and the first question a reviewer is going to ask &mdash; is, does this generalize or did you just find one architecture that happens to work on one problem?</p>
-    <p>The claim of v2 is that the principle generalizes. Same ViT encoder, same LinearCP decoder, same EQ hyper-reduction, same latent Gauss&ndash;Newton solver. What changes across PDEs is hyperparameters &mdash; patch size, latent dimension, rank &mdash; and, for vector-valued problems, we use one CP core per output channel with a shared encoder. That multi-channel extension is a single documented change, not a separate architecture. The paper covers eight benchmarks: Poisson, Heat, Burgers, Navier&ndash;Stokes, each in 2D and 3D, spanning elliptic to parabolic to advection-dominated with incompressibility. That's three physics regimes and two dimensions. If the principle is real, it survives all eight. If it isn't, we find out where it breaks and that's a different but still publishable paper.</p>
+    <p>Chapter 3 generalizes Chapter 1's principle to a different property class. Chapter 1's property was Jacobian regularity &mdash; a condition on the derivative of the decoder. Chapter 3's property is <em>algebraic constraint preservation</em> &mdash; a condition on the decoder's output values. Incompressibility for Navier&ndash;Stokes: $\nabla\cdot\mathbf{u} = 0$. Divergence-free magnetic fields in MHD. Mass conservation in reacting flows. Symplectic structure in Hamiltonian systems. Each is a hard algebraic constraint the classical solver respects by construction and the learned solver, trained with reconstruction loss, will violate.</p>
+    <p>The architectural question is: what decoder structure guarantees the constraint holds <em>exactly</em> in the online solve, not just approximately on training data? For incompressibility specifically, the classical trick is to work with a stream function or a vector potential, which makes the velocity field divergence-free by construction. A learned decoder can do the same: output the potential, take its curl inside the architecture. For other constraints the answer is different &mdash; Lagrangian-enforced training, projection layers, or structure-preserving decoder families.</p>
+    <p>This is one chapter in the shape of Chapter 1: identify the property, find the architectural device, demonstrate it broadly. But the property class is different, so the device is different, and the generalization says something about how the thesis-level principle &mdash; architectural guarantee over loss-based enforcement &mdash; repeats across property classes.</p>
   </div>
 
-  <div class="visual">
-    <div class="visual-label">Experiment matrix (&sect;5 of design doc)</div>
-    <table>
-      <thead>
-        <tr>
-          <th>PDE</th>
-          <th>Regime</th>
-          <th>Channels</th>
-          <th>2D</th>
-          <th>3D</th>
-          <th>Start</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr><td>Poisson</td><td>elliptic</td><td>scalar</td><td>64, 128, 256 &#10003;</td><td>32, 64, 128 &#10003;</td><td>cold</td></tr>
-        <tr><td>Heat</td><td>parabolic</td><td>scalar</td><td>planned</td><td>32, 64 &#10003;</td><td>warm per timestep</td></tr>
-        <tr class="in-flight"><td>Burgers</td><td>advection-dominated scalar</td><td>2 (u,v) / 3 (u,v,w)</td><td>64, in flight</td><td>32, in flight</td><td>warm per timestep</td></tr>
-        <tr class="in-flight"><td>Navier&ndash;Stokes</td><td>advection + incompressibility</td><td>3 / 4 with pressure</td><td>planned</td><td>planned</td><td>warm per timestep</td></tr>
-      </tbody>
-    </table>
-    <p style="font-size:13px; color: var(--muted); margin-top:4px;">Shaded rows are currently running. Stretch: Burgers-3D at 64<sup>3</sup> would hit ~715K degrees of freedom &mdash; the largest-$N$ claim.<a href="#claims" class="flag" title="Flagged claim">&#9888;2</a></p>
+  <div class="qa">
+    <div class="qa-head">Anticipated question</div>
+    <p class="q">Is Chapter 3 just Chapter 1 with a different constraint, or is there genuinely new machinery?</p>
+    <p class="a">Genuinely new. Chapter 1's device (linear skip) makes a <em>spectral</em> guarantee &mdash; bounded condition number. Chapter 3's device must make an <em>algebraic</em> guarantee &mdash; a pointwise identity. These are different mathematical objects and the architectural patterns are different: potential-function parametrization, projection layers, structure-preserving coordinates. What transfers is the <em>meta-principle</em>: guarantee the requirement architecturally, not in the loss.</p>
   </div>
 </section>
 
 <!-- ============================================================ -->
 <section class="slide" id="s7">
-  <h2><span class="num">7</span>Headline results</h2>
+  <h2><span class="num">7</span>Chapter 4 &mdash; Error certification</h2>
   <div class="transcript">
-    <p>Here are the actual numbers, pulled from the <code>results.tsv</code> file for each experiment and the <code>README.md</code> headline table. Poisson-3D at 32<sup>3</sup> hits fifty-seven times speedup at five-times-ten-to-the-minus-three relative error. Poisson-3D at 64<sup>3</sup> hits sixty-three-point-five times speedup. Poisson-2D at the largest grid I ran, 256<sup>2</sup>, hits thirty-eight-point-five times. Heat-3D at 64<sup>3</sup> &mdash; which is a multi-timestep warm-start problem, not cold-start &mdash; hits twelve times for the accurate variant, thirteen-point-six times for the aggressive-speedup variant. Wave-3D at 32<sup>3</sup> hits eight times.</p>
-    <p>The last row is Burgers-3D at 32<sup>3</sup>, which is running as we speak. Current log reports twelve times speedup with mean relative error around thirty-seven percent &mdash; obviously we're still tuning the latent dimension and rank, because the Re=1500 extrapolation case is blowing up. The earlier run at k=12 had half that mean error at similar speedup but worse extrapolation. That's the kind of knob-turning I'll show next. The point of this slide is just that the numbers cover a wide range of PDEs and they all come out of the same training and solver script.</p>
-  </div>
-
-  <div class="visual">
-    <div class="visual-label">Headline results across PDEs</div>
-    <table>
-      <thead>
-        <tr>
-          <th>PDE</th>
-          <th>Dim</th>
-          <th class="num">FOM DoF</th>
-          <th class="num">Speedup</th>
-          <th class="num">Rel-L<sup>2</sup></th>
-          <th>Status</th>
-          <th>Source</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr class="headline"><td>Poisson</td><td>3D, 32<sup>3</sup></td><td class="num">32,768</td><td class="num">57&times;</td><td class="num">5.36e-3</td><td>v1 baseline</td><td>sweep-17runs (LinearCP ckpt)</td></tr>
-        <tr><td>Poisson</td><td>3D, 64<sup>3</sup></td><td class="num">262,144</td><td class="num">63.48&times;</td><td class="num">4.24e-2</td><td>fast-Pareto pt</td><td>Poisson-3D/res-64</td></tr>
-        <tr><td>Poisson</td><td>3D, 128<sup>3</sup></td><td class="num">2,097,152</td><td class="num">41.49&times;</td><td class="num">1.70e-2</td><td>best rel-L<sup>2</sup></td><td>Poisson-3D/res-128 (tuned)</td></tr>
-        <tr><td>Poisson</td><td>2D, 64<sup>2</sup></td><td class="num">4,096</td><td class="num">27.37&times;</td><td class="num">4.69e-4</td><td>baseline</td><td>Poisson-2D/res-64</td></tr>
-        <tr><td>Poisson</td><td>2D, 128<sup>2</sup></td><td class="num">16,384</td><td class="num">28.61&times;</td><td class="num">1.44e-3</td><td>baseline</td><td>Poisson-2D/res-128</td></tr>
-        <tr><td>Poisson</td><td>2D, 256<sup>2</sup></td><td class="num">65,536</td><td class="num">38.52&times;</td><td class="num">6.33e-3</td><td>baseline</td><td>Poisson-2D/res-256</td></tr>
-        <tr><td>Heat</td><td>3D, 32<sup>3</sup></td><td class="num">32,768</td><td class="num">10.08&times;</td><td class="num">2.01e-1</td><td>first baseline</td><td>Heat-3D/res-32 4bc49a8</td></tr>
-        <tr><td>Heat</td><td>3D, 32<sup>3</sup></td><td class="num">32,768</td><td class="num">9.34&times;</td><td class="num">4.86e-2</td><td>tuned (target met)</td><td>Heat-3D/res-32 HEAD</td></tr>
-        <tr><td>Heat</td><td>3D, 64<sup>3</sup> (ACC)</td><td class="num">262,144</td><td class="num">12.07&times;</td><td class="num">6.46e-2</td><td>accuracy Pareto</td><td>Heat-3D/res-64-sweep 38c90a5</td></tr>
-        <tr><td>Heat</td><td>3D, 64<sup>3</sup> (FAST)</td><td class="num">262,144</td><td class="num">13.61&times;</td><td class="num">8.09e-2</td><td>speedup Pareto</td><td>Heat-3D/res-64-sweep 6e8f035</td></tr>
-        <tr><td>Heat</td><td>3D, 64<sup>3</sup> (BAL)</td><td class="num">262,144</td><td class="num">13.18&times;</td><td class="num">7.29e-2</td><td>balanced</td><td>Heat-3D/res-64-sweep 71b068d</td></tr>
-        <tr><td>Wave</td><td>3D, 32<sup>3</sup></td><td class="num">32,768</td><td class="num">8.01&times;</td><td class="num">5.6e-1</td><td>u-only retrain</td><td>Wave-3D/res-32 ff6d635</td></tr>
-        <tr class="in-flight"><td>Burgers</td><td>3D, 32<sup>3</sup> (u,v,w)</td><td class="num">98,304</td><td class="num">12.01&times;</td><td class="num">3.73e-1</td><td>in-flight, tuning k, rank</td><td>Autoresearch-Loop/Burgers-3D (2d4e8ef)</td></tr>
-      </tbody>
-    </table>
-    <p style="font-size:13px; color: var(--muted); margin-top:4px;">Shaded row is in-flight. Timing in seconds per solve, averaged over 4&ndash;6 parameter cases; Poisson is cold-start, Heat and Burgers are warm-start per timestep.</p>
+    <p>Chapter 4 is the payoff chapter. Given an NM-ROM output $\hat{\mathbf{u}}$, can I compute an upper bound on $\|\mathbf{u} - \hat{\mathbf{u}}\|$ using only online data, without running the full-order method? This is what classical POD-Galerkin has: a posteriori error estimators due to Patera, Rozza, Veroy. They let a certified reduced-basis solver tell a user &ldquo;the answer is correct to within this tolerance.&rdquo; Neural surrogates currently have nothing comparable. Without a certificate, you cannot put the surrogate in a pipeline where correctness matters.</p>
+    <p>The reason Chapter 4 depends on Chapters 1 through 3 is that a posteriori bounds for nonlinear-manifold solvers require structural properties of the decoder. You need the Jacobian to behave, you need the constraint residuals to be computable, you need the spatial discretization to be well-defined on the adapted mesh. Chapters 1, 2, 3 supply exactly those. Chapter 4 composes them into a certificate.</p>
+    <p>If this chapter lands, the thesis has a one-line claim a practitioner can act on: &ldquo;You can deploy my learned ROM in your pipeline and I can tell you, online, how far its answer is from the true FOM solution.&rdquo; That's the kind of sentence an FDA regulator, a DOE lab director, or an aerospace certification engineer understands.</p>
   </div>
 
   <div class="qa">
-    <div class="qa-head">anticipated</div>
-    <p class="q">Your scale claim versus Barnett&ndash;Farhat's 17M DoF?</p>
-    <p class="a">The qualifier has to be load-bearing and exact. Their 17M is ECSW hyper-reduction with a quadratic manifold, not a learned decoder. My 128<sup>3</sup> Poisson is 2.1M DoF, 3D, with a learned decoder and EQ-style hyper-reduction, and Burgers-3D at 64<sup>3</sup> (in progress) would be ~715K DoF across three velocity channels. Scale claim: largest-$N$ <em>learned-decoder</em> NM-ROM with <em>EQ-style</em> hyper-reduction on <em>fully 3D</em> PDEs in the literature corpus.<a href="#claims" class="flag" title="Flagged claim">&#9888;2</a> Each adjective excludes one competing claim. I don't claim largest-$N$ overall.</p>
+    <div class="qa-head">Anticipated question</div>
+    <p class="q">A posteriori bounds for POD-ROM are tight. Will yours be?</p>
+    <p class="a">Honestly, I don't know yet, and I'm not going to pretend I do. The plan is to start with a Strang-lemma-style bound that uses Chapter 1's Jacobian constants, Chapter 3's constraint residuals, and Chapter 2's mesh adaptation to give a <em>conservative</em> upper bound; then tighten. Classical POD bounds also started conservative and got tighter with ten years of work. If I can deliver a conservative bound with a principled tightening direction, that's already a chapter.</p>
   </div>
 </section>
 
 <!-- ============================================================ -->
 <section class="slide" id="s8">
-  <h2><span class="num">8</span>The knobs &mdash; tunable Pareto</h2>
+  <h2><span class="num">8</span>Chapter 5 &mdash; Synthesis on one representative problem</h2>
   <div class="transcript">
-    <p>This is one of the contributions I'm most proud of. Each PDE has a Pareto frontier of rel-L<sup>2</sup> versus speedup, and the same six hyperparameters move the operating point along that frontier on every single PDE. Latent dimension $k$. CP rank $R$. Number of EQ sample nodes $N_{\text{EQ}}$. Gauss&ndash;Newton tolerance. Max GN iterations. Encoder depth. Increase $N_{\text{EQ}}$ or tighten GN tolerance, you get better accuracy at the cost of speedup. Cap max iterations aggressively, you get more speedup at the cost of accuracy. Every PDE has its own constant of proportionality but the shape of the trade-off is the same.</p>
-    <p>Concretely: the Poisson-3D 17-run sweep kept six configurations on the frontier, eleven discarded. The Heat-3D 64<sup>3</sup> sweep has thirteen runs, seven kept and six discarded &mdash; because Heat is warm-start we can afford larger latent dimensions, and the frontier sits at roughly twelve-to-fourteen times speedup. Both sweeps exhibit the exact same qualitative structure: capping max iterations buys speedup at the price of accuracy until you hit a cliff; accuracy saturates beyond a certain training budget; rank matters less than iteration count. That's the recipe&rsquo;s consistency, in numbers.</p>
-  </div>
-
-  <div class="visual">
-    <div class="visual-label">Six orthogonal knobs (v2 &sect;10 summary)</div>
-    <table>
-      <thead>
-        <tr>
-          <th>Knob</th>
-          <th>Default (Poisson-3D v1)</th>
-          <th>Effect on speedup</th>
-          <th>Effect on rel-L<sup>2</sup></th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr><td>$k$ (latent dim)</td><td>12</td><td>weak</td><td>expressiveness ceiling</td></tr>
-        <tr><td>$R$ (CP rank)</td><td>512</td><td>inverse (smaller $R$ &rarr; faster)</td><td>breaks below ~128</td></tr>
-        <tr><td>$N_{\text{EQ}}$ (sample nodes)</td><td>200</td><td>inverse</td><td>direct</td></tr>
-        <tr><td>GN tolerance</td><td>1e-5</td><td>looser &rarr; faster</td><td>looser &rarr; worse</td></tr>
-        <tr><td>max GN iters</td><td>8</td><td>inverse (fewer iters &rarr; much faster)</td><td>fewer iters &rarr; hit cliff</td></tr>
-        <tr><td>encoder depth $L$</td><td>4</td><td>marginal</td><td>marginal past $L=4$</td></tr>
-      </tbody>
-    </table>
-    <p style="font-size:13px; color: var(--muted); margin-top:4px;">v1 sweep: 17 runs, 6 kept. Heat-3D-64 sweep: 13 runs, 7 kept. Poisson-3D-64 sweep: 9 runs, 5 kept. Same qualitative behavior on every PDE.</p>
+    <p>Chapter 5 is deliberately not a deployment chapter with a domain collaborator. I have an ML-side collaboration with a group at Utah, but they are ML people, not a simulation group with a deployment target. Overpromising a deployment I don't have would be the wrong move for a candidacy.</p>
+    <p>Instead, Chapter 5 picks one technically representative problem that exercises every previous chapter at once. Candidate: a multi-physics benchmark &mdash; thermal-mechanical coupling, or a conjugate heat transfer problem &mdash; run on an adaptively refined mesh, with an algebraic constraint (incompressibility or mass conservation), and solved to a certified tolerance. No single chapter's methods would suffice. The full machinery would. That is the thesis's claim to engineering relevance: the chapters are not independent; they compose into something a practitioner could, in principle, use.</p>
   </div>
 </section>
 
 <!-- ============================================================ -->
 <section class="slide" id="s9">
-  <h2><span class="num">9</span>Architecture ablations</h2>
+  <h2><span class="num">9</span>Timeline and deliverables</h2>
   <div class="transcript">
-    <p>Before I landed on LinearCP, I spent eight months trying things that didn't work. I want to walk you through the journey because the failed attempts are where the intuition for the final fix came from. It's documented in full in <code>architecture_journey.md</code>.</p>
-    <p>First attempt: CNN encoder with the original CP decoder. CNN couldn't generalize on 700 Poisson samples &mdash; validation error plateaued at six to ten percent regardless of regularization, and NM-ROM error was above 100 percent. The CNN's local receptive field cannot capture global sinusoids. Attempt two: swap in a ViT encoder, keep the deep-MLP CP decoder. Encoder is now fine &mdash; validation error three-and-a-half percent &mdash; but the ROM still diverges on two of four test cases. That's the exact divergence pattern that led me to the Jacobian-regularity hypothesis. Attempt three, attention pooling instead of mean pool: worse. Attempt four, a Jacobian-smoothness regularizer during training: helped case two, hurt cases one and four. Attempt five, attention refinement on the decoder output: marginal and five times slower. Attempt six, joint $(z,s)$ solver: failed because Gauss&ndash;Newton drove $s$ to zero. Attempt seven, the linear skip: all four cases converge, 57x speedup. The journey maps onto the Jacobian-regularity framing cleanly &mdash; every attempt that addressed something other than the Jacobian failed.</p>
+    <p>A candidacy committee wants a concrete schedule. Here is mine.</p>
   </div>
 
   <div class="visual">
-    <div class="visual-label">Seven-attempt journey (Poisson-3D, all on 32<sup>3</sup>)</div>
+    <div class="visual-label">chapter-by-chapter timeline</div>
     <table>
       <thead>
-        <tr>
-          <th class="num">#</th>
-          <th>Architecture</th>
-          <th class="num">Val rec.</th>
-          <th class="num">ROM rel-L<sup>2</sup></th>
-          <th>Verdict</th>
-        </tr>
+        <tr><th>Chapter</th><th>Status</th><th>Milestone</th><th>Vehicle</th></tr>
       </thead>
       <tbody>
-        <tr><td class="num">1</td><td>CNN + SeparableCP</td><td class="num">6&ndash;10%</td><td class="num">&gt;100%</td><td>fail: CNN can't see globally</td></tr>
-        <tr><td class="num">2</td><td>ViT + SeparableCP (deep MLP)</td><td class="num">3.49%</td><td class="num">2/4 diverge</td><td>fail: Jacobian varies</td></tr>
-        <tr><td class="num">3</td><td>+ attention pooling</td><td class="num">5.1%</td><td class="num">2/4 diverge</td><td>fail: no benefit</td></tr>
-        <tr><td class="num">4</td><td>+ Jacobian-smoothness regularizer</td><td class="num">4.3%</td><td class="num">mixed</td><td>fail: hurts easy cases</td></tr>
-        <tr><td class="num">5</td><td>+ attention refinement</td><td class="num">3.66%</td><td class="num">case 3 still ~93%</td><td>fail: 5x slower</td></tr>
-        <tr><td class="num">6</td><td>joint $(z,s)$ solver</td><td class="num">3.49%</td><td class="num">s&rarr;0</td><td>fail: solver pathology</td></tr>
-        <tr class="headline"><td class="num">7</td><td><strong>ViT + LinearCP</strong> (linear skip)</td><td class="num">1.03%</td><td class="num"><strong>5.36e-3</strong></td><td>works on 4/4</td></tr>
+        <tr><td>1 &mdash; Jacobian regularity</td>  <td>landed</td>     <td>NeurIPS 2026 submission</td>                 <td>1 paper (done)</td></tr>
+        <tr><td>2 &mdash; AMR + parallel</td>       <td>in flight</td>  <td>First AMR benchmark, Fall 2026</td>         <td>1&ndash;2 papers</td></tr>
+        <tr><td>3 &mdash; Constraint preservation</td><td>planned</td>  <td>Incompressibility for NS, Winter 2026/27</td><td>1 paper</td></tr>
+        <tr><td>4 &mdash; Error certification</td>  <td>planned</td>    <td>Conservative a-posteriori bound, 2027</td>  <td>1 paper</td></tr>
+        <tr><td>5 &mdash; Synthesis</td>            <td>planned</td>    <td>Multi-physics benchmark, 2028</td>          <td>1 paper + thesis</td></tr>
       </tbody>
     </table>
   </div>
 
-  <div class="qa">
-    <div class="qa-head">anticipated</div>
-    <p class="q">What fails without the linear skip?</p>
-    <p class="a">The ViT+SeparableCP attempt is exactly this ablation &mdash; same encoder, same CP output, but the $\mathbf{z}\to\mathbf{h}$ path is a 3-layer swish MLP with no skip. Validation reconstruction is fine, 3.5 percent. ROM diverges on half the test cases from cold start. That's the cleanest single-variable ablation I ran, and it's the empirical backbone of the whole Jacobian-regularity argument.</p>
+  <div class="transcript">
+    <p>Four to five publications across the program, defense in 2028. Chapters 3 and 4 are sequenced so that Chapter 4 can borrow machinery from Chapter 3 rather than forking. Chapter 5 is the last year; by that point every component is validated independently.</p>
+    <p>If I have to cut, Chapter 5 is what gets cut &mdash; the thesis still stands on Chapters 1 through 4 as a research program. If something unexpectedly lands fast, the extra time goes into Chapter 4, which is the chapter with the most open-ended payoff.</p>
   </div>
 </section>
 
 <!-- ============================================================ -->
 <section class="slide" id="s10">
-  <h2><span class="num">10</span>The formal result</h2>
+  <h2><span class="num">10</span>Q&amp;A preparation bank</h2>
   <div class="transcript">
-    <p>I want to state what I'm willing to claim formally and what I'm not. The formal result is a bounded condition number, under an assumption on $W_{\text{dir}}$. The proof is short and I'll sketch it. What I don't claim is "Gauss&ndash;Newton converges from any initial $\mathbf{z}_0$" &mdash; that's a basin-of-attraction argument that needs more. I claim that the GN Hessian is uniformly well-conditioned on the latent space, which is the <em>necessary</em> condition I can rigorize. Empirically, GN converges from cold start on all tested cases.<a href="#claims" class="flag" title="Flagged claim">&#9888;3</a></p>
-  </div>
-
-  <div class="prop">
-    <div class="prop-head">Proposition (LinearCP Jacobian bound, paper &sect;7)</div>
-    <p>Let the decoder be $D(\mathbf{z}) = T_{\text{CP}}(W_{\text{dir}}\mathbf{z} + W_{\text{rank}}\sigma(W_2\sigma(W_1\mathbf{z})))$ with CP-tensor contraction $T_{\text{CP}}$ and a Lipschitz nonlinearity $\sigma$. Suppose $W_{\text{dir}}\in\mathbb{R}^{R\times k}$ has full column rank and the CP gather vectors $W_x[:,i]\odot W_y[:,j]\odot W_z[:,k]$ span a subspace of dimension at least $k$ on the sample-node set. Then there exist constants $0 < c_{\min} \le c_{\max} < \infty$ depending only on the trained weights such that, uniformly over $\mathbf{z}\in\mathbb{R}^k$,</p>
-    <p style="text-align:center;">$$ c_{\min} \;\le\; \kappa\bigl(J(\mathbf{z})^\top K^\top K J(\mathbf{z})\bigr) \;\le\; c_{\max}. $$</p>
-  </div>
-
-  <div class="visual">
-    <div class="visual-label">Proof sketch</div>
-    <p>Write $J(\mathbf{z}) = G(W_{\text{dir}} + E(\mathbf{z}))$ where $G$ is the per-node CP gather Jacobian and $E(\mathbf{z}) = \partial\mathbf{h}_{\text{nl}}/\partial\mathbf{z}$. Three steps. (i) $\|E(\mathbf{z})\|$ is uniformly bounded by a product of Lipschitz constants of $\sigma$ and operator norms of $W_1, W_2, W_{\text{rank}}$, which are constants after training. (ii) Since $W_{\text{dir}}$ has full column rank, its smallest singular value is strictly positive; by Weyl's inequality, $\sigma_{\min}(W_{\text{dir}} + E(\mathbf{z})) \ge \sigma_{\min}(W_{\text{dir}}) - \|E(\mathbf{z})\|$, which is a positive constant provided the nonlinear perturbation is small enough relative to $\sigma_{\min}(W_{\text{dir}})$. (iii) The outer gather-and-stencil factor $K G$ has full column rank on the sample-node set by assumption. Composing bounds gives constants $c_{\min}, c_{\max}$ independent of $\mathbf{z}$.</p>
-    <p style="font-size:13px; color: var(--muted);">Caveats: (a) we verify $W_{\text{dir}}$ remains full-rank across all eight trained models empirically, not from the training objective; (b) the bound is conjectured to be slack &mdash; empirically $\kappa$ stays in $\mathcal{O}(10\!-\!100)$, far below the bound.</p>
-  </div>
-</section>
-
-<!-- ============================================================ -->
-<section class="slide" id="s11">
-  <h2><span class="num">11</span>Contributions</h2>
-  <div class="transcript">
-    <p>Four contributions, in order. One: a principle. Jacobian regularity is the decisive property for NM-ROM, and a linear skip gives you a constant-Jacobian anchor that makes the GN Hessian condition number bounded. Two: a recipe. ViT encoder, LinearCP decoder, Empirical Quadrature, latent Gauss&ndash;Newton &mdash; one architecture family, works unchanged across cold-start elliptic and warm-start time-dependent PDEs, with one documented extension for vector-valued problems. Three: a tunable Pareto. Six orthogonal knobs, same qualitative behavior on every PDE, so deployment is a matter of picking an operating point on a known frontier rather than redesigning an architecture. Four: scale and breadth. Eight PDEs across three physics regimes and two dimensions, FOM dimensions up to two million, and, with the qualifiers I mentioned, the largest-$N$ learned-decoder NM-ROM with EQ-style hyper-reduction I've found in the literature.<a href="#claims" class="flag" title="Flagged claim">&#9888;2</a></p>
-  </div>
-
-  <div class="visual">
-    <div class="contrib-list">
-      <div class="contrib"><h4>1. Principle</h4><p>Jacobian regularity, not reconstruction accuracy, decides latent GN convergence. Linear-skip CP guarantees a bounded GN Hessian condition number.</p></div>
-      <div class="contrib"><h4>2. Recipe</h4><p>ViT + LinearCP + EQ + latent GN. One architecture family, unchanged across cold-start elliptic and warm-start time-dependent PDEs.</p></div>
-      <div class="contrib"><h4>3. Tunable Pareto</h4><p>Six orthogonal knobs ($k$, $R$, $N_{\text{EQ}}$, GN tol, max iters, encoder depth) move the operating point on every PDE.</p></div>
-      <div class="contrib"><h4>4. Scale &amp; breadth</h4><p>Eight PDE benchmarks. Poisson / Heat / Burgers / NS x {2D, 3D}. FOM DoF up to 2.1M.<a href="#claims" class="flag" title="Flagged claim">&#9888;2</a></p></div>
-    </div>
-  </div>
-</section>
-
-<!-- ============================================================ -->
-<section class="slide" id="s12">
-  <h2><span class="num">12</span>Limitations and open questions</h2>
-  <div class="transcript">
-    <p>I want to be honest about what's shaky. First, the in-flight experiments. Burgers-3D is running right now and the headline number is in the preliminary column &mdash; mean relative error around 37 percent with a heavy tail at the extrapolated Reynolds number. Navier&ndash;Stokes in 2D and 3D is planned, not landed. If NS doesn't work, the paper's universality claim becomes "seven PDEs across two physics regimes," which is still publishable but weaker.</p>
-    <p>Second, the formal proposition assumes $W_{\text{dir}}$ stays full column rank after training. This holds empirically &mdash; I check it on every trained model &mdash; but it isn't guaranteed by the training loss. Whether it holds under adversarial training or very aggressive weight decay is open. Third, the cold-start claim is only Poisson. Heat, Burgers, Navier&ndash;Stokes are time-dependent and warm-start per timestep &mdash; the solver uses the previous timestep's latent as initialization. That's a weaker convergence regime where GN only takes small local steps, and the Jacobian-regularity argument is still relevant but less load-bearing.</p>
-    <p>Fourth, scale beyond 64<sup>3</sup>. Poisson-3D at 128<sup>3</sup> works but we needed more training data and tighter hyperparameters. Burgers-3D at 64<sup>3</sup> is the stretch goal &mdash; whether training time and GPU memory scale gracefully past that is an open question that I'd address in a followup, not here.</p>
-  </div>
-</section>
-
-<!-- ============================================================ -->
-<section class="slide" id="s13">
-  <h2><span class="num">13</span>Future work</h2>
-  <div class="transcript">
-    <p>Three directions I'm excited about. One, scaling up: getting Navier&ndash;Stokes in 3D at 64<sup>3</sup> to run, which would put us at roughly a million degrees of freedom for a genuinely nonlinear coupled system. Two, adaptive mesh refinement. Everything in this paper assumes a uniform Cartesian grid, which is what CP-tensor decoders naturally support. AMR breaks the tensor structure, and that's a nontrivial research direction &mdash; explicitly deferred in this paper. Three, cross-PDE transfer. I'm very curious whether a decoder trained on Heat can bootstrap Burgers via fine-tuning. If the architecture family is truly universal, there should be shared structure in the learned CP bases that survives across PDEs. That's a clean experimental question I haven't run.</p>
-    <p>On the theory side: is Jacobian regularity <em>necessary</em> as well as sufficient? My claim is that it's sufficient &mdash; you can build working NM-ROMs without it &mdash; sorry, <em>with</em> it. The converse &mdash; that every working NM-ROM has some form of Jacobian regularity &mdash; is harder and I don't have it yet. A counterexample would be a decoder with wildly varying Jacobian that still gets GN to converge, perhaps through some compensating structure in the residual. Worth looking for.</p>
-  </div>
-</section>
-
-<!-- ============================================================ -->
-<section class="slide" id="s14">
-  <h2><span class="num">14</span>Q&amp;A preparation bank</h2>
-  <p style="color:var(--muted); font-size:14px; margin-top:-4px;">Questions I expect &mdash; with the answers I plan to give.</p>
-
-  <div class="qa">
-    <div class="qa-head">Q1</div>
-    <p class="q">Why not just use FNO or a neural operator instead?</p>
-    <p class="a">FNO regresses solution from parameters &mdash; no PDE projection, no physics consistency at inference, and parameter generalization is entirely an empirical property of the training set. NM-ROM projects the true PDE residual onto a learned manifold: the solver is still doing physics, and out-of-distribution parameters degrade in a controlled, residual-visible way rather than silently. Different tool. For some problems FNO is absolutely the right choice; for engineering applications where you need a residual norm to report, NM-ROM is.</p>
+    <p>Questions the committee is likely to press on, and what I'd say.</p>
   </div>
 
   <div class="qa">
-    <div class="qa-head">Q2</div>
-    <p class="q">How does LinearCP differ from Kim&ndash;Choi's masked shallow MLP?</p>
-    <p class="a">Both give $\mathcal{O}(R)$ per-node cost, which is the hyper-reduction requirement. The difference is the structural anchor. Kim&ndash;Choi mask-based MLPs have no constant-Jacobian term &mdash; the Jacobian is whatever the trained MLP happens to be. LinearCP puts a full-rank linear skip underneath the nonlinear path, and that's what makes the Jacobian argument formalizable. It's a small architectural change with a load-bearing consequence.</p>
+    <div class="qa-head">Program-level</div>
+    <p class="q">This thesis claims five chapters. Five chapters is a lot. How do you know you're not biting off more than one person can do in five years?</p>
+    <p class="a">Chapter 1 is done and that's the chapter that establishes the machinery. Chapter 2 reuses Chapter 1's architecture and adds a tree data structure plus parallel assembly &mdash; both are well-studied problems, I'm not inventing AMR. Chapter 3 is one case study (incompressibility); I'd add more if time allows but one is enough. Chapter 4 I deliberately scope to a conservative bound, not a tight one. Chapter 5 is a synthesis, not new methodology. The thesis is five <em>chapters</em> but it's three <em>papers' worth</em> of new methodology &mdash; Chapters 2, 3, 4 &mdash; plus an application. That fits in three and a half years after Chapter 1.</p>
   </div>
 
   <div class="qa">
-    <div class="qa-head">Q3</div>
-    <p class="q">Why is Jacobian regularity a better framing than reconstruction accuracy?</p>
-    <p class="a">Reconstruction accuracy is evaluated at encoded training points. Gauss&ndash;Newton evaluates the decoder at intermediate $\mathbf{z}$ values along its iterate path &mdash; places no training sample touches. My v1 showed two of four test cases diverged at 3.5% validation error. That's the one-line proof that the two quantities decouple.</p>
+    <div class="qa-head">Program-level</div>
+    <p class="q">Why is architectural guarantee the right framing? Why not just train better, with better losses?</p>
+    <p class="a">Two reasons. First, architectural guarantees hold uniformly over inputs, including out-of-distribution inputs. A loss term enforces a property on training data and hopes it generalizes; in Chapter 1 I show that hope fails &mdash; a 1% reconstruction model diverges on test cases. Second, architectural guarantees are <em>composable</em>: I can stack Chapter 1's Jacobian bound with Chapter 3's constraint preservation and get both. Loss-term compositions interact in opaque ways. This is the systems-design argument for architectural over loss-based.</p>
   </div>
 
   <div class="qa">
-    <div class="qa-head">Q4</div>
-    <p class="q">What specifically fails without the linear skip?</p>
-    <p class="a">The ViT + Separable(deep-MLP) CP ablation is exactly the no-skip case. Same encoder, same CP output tensor, same training objective. Validation reconstruction is 3.5%. ROM diverges on cases 2 and 3 of four Poisson test cases from cold start. Cases 1 and 4 &mdash; whose $\mathbf{z}^\star$ lies near the origin in the MLP's well-conditioned region &mdash; converge. The divergence is purely a latent-space path problem.</p>
+    <div class="qa-head">Program-level</div>
+    <p class="q">What if someone scoops you on Chapter 2?</p>
+    <p class="a">Possible, and the thesis survives. The framing &mdash; architectural guarantees as a unified program &mdash; is the thesis's contribution. Any individual chapter could be scooped and the framing would still be worth the degree. That's why a programmatic candidacy is safer than a single-result candidacy. But in practice AMR for learned decoders is not a hot topic &mdash; the ML surrogate community is mostly chasing bigger models on uniform grids &mdash; and I have a nine-month window before anything plausible appears.</p>
   </div>
 
   <div class="qa">
-    <div class="qa-head">Q5</div>
-    <p class="q">How do you generalize to time-dependent PDEs?</p>
-    <p class="a">Time-stepping, warm-start per timestep. The solver state is a single latent $\mathbf{z}(t)$, initialized at $\mathbf{z}(t+\Delta t)_0 = \mathbf{z}(t)$ from the previous step. Same LinearCP decoder, same GN solver. Heat-3D and Burgers-3D run exactly this way. The Jacobian argument is still relevant because each timestep is a local GN solve, but it's less load-bearing because warm-start keeps the iterate path short.</p>
+    <div class="qa-head">Chapter 1 technical</div>
+    <p class="q">How does this compare to Kim&ndash;Choi 2022 or to the Willcox group's quadratic manifolds?</p>
+    <p class="a">Kim&ndash;Choi get per-node cost $\mathcal{O}(1)$ via a sparse masked MLP. I get $\mathcal{O}(R)$ via a CP-tensor with a principled Jacobian bound via the linear skip. Kim&ndash;Choi have no architectural Jacobian guarantee; I do. Quadratic manifolds (Geelen&ndash;Willcox, Barnett&ndash;Farhat) achieve a bounded Jacobian by restricting the decoder class to affine-plus-quadratic; I achieve the same property without restricting the decoder class, which means I get more expressiveness for the same guarantee. Same motivation (Jacobian regularity), different architectural answer.</p>
   </div>
 
   <div class="qa">
-    <div class="qa-head">Q6</div>
-    <p class="q">How do you handle incompressibility and pressure in Navier&ndash;Stokes?</p>
-    <p class="a">Per-channel CP cores on a shared ViT encoder. Velocity components $(u,v,w)$ each get their own CP core; pressure gets its own core. The encoder produces a single latent $\mathbf{z}$ that feeds all channels, so we don't double the latent dimension per channel. Documented in &sect;9.3 of the v2 paper. The extension is additive and reduces to v1 when the channel count is 1.</p>
+    <div class="qa-head">Chapter 1 technical</div>
+    <p class="q">Why not just use a Fourier Neural Operator? Much faster at inference.</p>
+    <p class="a">FNO is a regression from parameters to solutions; it is not a PDE solver. It has no residual in the online loop, so it cannot enforce a physics constraint at test time, and it generalizes to new parameters only within its training distribution. An NM-ROM <em>solves the equations</em> at each query &mdash; the online Gauss&ndash;Newton converges when the residual is zero, not when the regression thinks it should. That is what gives NM-ROMs parameter generalization and certifiable error, and it is why neural operators are in a different class of methods for a different use case.</p>
   </div>
 
   <div class="qa">
-    <div class="qa-head">Q7</div>
-    <p class="q">Your scale claim versus Barnett&ndash;Farhat's 17M?</p>
-    <p class="a">Their 17M is ECSW hyper-reduction on a quadratic manifold &mdash; not a learned decoder. My largest is 2.1M (Poisson-3D 128<sup>3</sup>) with a learned decoder and EQ-style hyper-reduction. The exact claim: largest-$N$ <em>learned-decoder</em> NM-ROM with <em>EQ-style</em> hyper-reduction on <em>fully 3D</em> PDEs in the current literature corpus. Each adjective is load-bearing.<a href="#claims" class="flag" title="Flagged claim">&#9888;2</a></p>
+    <div class="qa-head">Chapter 1 technical</div>
+    <p class="q">Your Proposition 1 assumes $W_{\text{dir}}$ has full column rank. Is that guaranteed by training?</p>
+    <p class="a">No, and I want to be upfront about that.<a href="#claims" class="flag" title="flag 3">&#9888; 3</a> Empirically, across every trained model I've checked, $W_{\text{dir}}$'s smallest singular value is an order of magnitude above the nonlinear-path contribution, so the bound holds. But the training procedure doesn't enforce it directly. A natural Chapter 2-or-later extension is a regularizer that makes the assumption hold by construction. For the current paper I verify it empirically and flag the assumption explicitly.</p>
   </div>
 
   <div class="qa">
-    <div class="qa-head">Q8</div>
-    <p class="q">Why CP specifically? Why not Tucker or tensor-train?</p>
-    <p class="a">Per-node cost. CP gives you $\mathcal{O}(R)$ per node which is the minimum: three 1D basis gathers and one rank-$R$ dot product. Tucker has a core tensor of size $R_x \cdot R_y \cdot R_z$ &mdash; per-node cost is $\mathcal{O}(R_x R_y R_z)$, roughly $R^3$ if you balance ranks. Tensor-train is somewhere in between. CP is the cheapest and the trade-off is expressiveness, which is why $R$ needs to be a few hundred. For 3D fields on Cartesian grids this trade-off is worth it.</p>
+    <div class="qa-head">Scope / scale</div>
+    <p class="q">What does &ldquo;largest $N$&rdquo; mean in your scale claim? Barnett&ndash;Farhat got to 17 million degrees of freedom.</p>
+    <p class="a">Right, and I am careful about the qualifier.<a href="#claims" class="flag" title="flag 2">&#9888; 2</a> Barnett&ndash;Farhat use a quadratic manifold, not a learned decoder, and ECSW hyper-reduction rather than Empirical Quadrature. The claim I can stand behind is: largest-$N$ <em>fully 3D learned-decoder</em> NM-ROM with <em>EQ-style</em> hyper-reduction <em>and a parametric sweep</em> in the literature corpus I have surveyed. Each qualifier is load-bearing. If I drop any one, someone has gone bigger. The paper states this qualifier explicitly.</p>
   </div>
 
   <div class="qa">
-    <div class="qa-head">Q9</div>
-    <p class="q">Is the Jacobian bound tight?</p>
-    <p class="a">Conjecturally slack. Empirically, across all eight PDEs and all trained models, the GN Hessian condition number stays in $\mathcal{O}(10$ to $100)$, far below the worst-case bound implied by the weight norms. Tightening the bound is an open theory question.<a href="#claims" class="flag" title="Flagged claim">&#9888;3</a></p>
+    <div class="qa-head">Positioning</div>
+    <p class="q">Why is this a CS thesis and not an applied math thesis?</p>
+    <p class="a">Applied math gives you the theorem template &mdash; if property $X$, then error bounded by $Y$. CS asks how to <em>build systems</em> that guarantee property $X$ at the scales modern ML operates at. My work is almost entirely about architectural devices, data-structure choices (CP tensors, quadtrees), and solver-assembly patterns &mdash; standard CS primitives. The theorems are lemmas; the system is the contribution. That's the CS thesis shape.</p>
   </div>
 
   <div class="qa">
-    <div class="qa-head">Q10</div>
-    <p class="q">Could you retrain the decoder adaptively during the solve?</p>
-    <p class="a">You could, but it's a different paper. The whole point of the tunable Pareto is that the recipe is open-loop: train once, solve many. Adaptive retraining introduces a closed-loop coupling that breaks the Pareto framing and makes per-solve timing non-deterministic. It's a reasonable research direction &mdash; think of it as "online NM-ROM" &mdash; but it's orthogonal to the universality claim.</p>
+    <div class="qa-head">Risk</div>
+    <p class="q">What is the biggest technical risk in the program?</p>
+    <p class="a">Chapter 4. Error certification for nonlinear-manifold ROMs is genuinely open; I don't know in advance whether the bound I sketch will be usefully tight. I've structured the dependencies so Chapter 4 is last, not because it's least important but because it needs Chapters 1&ndash;3 to have any chance. If it fails, Chapter 5 synthesis still stands and the thesis defends on 1&ndash;3 plus synthesis. That's the fallback.</p>
   </div>
 
   <div class="qa">
-    <div class="qa-head">Q11</div>
-    <p class="q">What's the generalization behavior in parameter space?</p>
-    <p class="a">Training set is Latin-hypercube sampled across the parameter range. Test cases are held-out interpolation points. All reported speedups and rel-L<sup>2</sup>s are on test cases, not training. Extrapolation is harder &mdash; the Burgers-3D Re=1500 case in the current run is outside the training distribution and the error blows up, which is expected. Generalization is as good as your training design, no better; what NM-ROM gives you is a principled way to quantify the degradation via the residual norm at inference.</p>
-  </div>
-
-  <div class="qa">
-    <div class="qa-head">Q12</div>
-    <p class="q">Training cost &mdash; is this actually cheaper end-to-end than FOM solves?</p>
-    <p class="a">Training Poisson-3D at 32<sup>3</sup> takes about 10 minutes on one A100. Amortized, you need roughly 100 FOM solves before the ROM's 57x speedup pays back the training cost. Most real applications do thousands or tens of thousands of solves &mdash; UQ, design exploration &mdash; so the amortization is irrelevant. If you only need 10 solves, use the FOM directly.</p>
-  </div>
-</section>
-
-<!-- ============================================================ -->
-<section class="slide" id="s15">
-  <h2><span class="num">15</span>Closing</h2>
-  <div class="transcript">
-    <p>What I want you to remember from this talk is that decoder architecture is not about reconstruction accuracy &mdash; it's about whether the PDE solver in latent space can actually converge. One property, Jacobian regularity, is what makes Gauss&ndash;Newton tractable. A linear skip is the minimal architectural ingredient that gives you that property provably. The same recipe &mdash; ViT encoder, LinearCP decoder, Empirical Quadrature, latent Gauss&ndash;Newton &mdash; works across eight PDEs spanning elliptic, parabolic, and advection-dominated regimes in two and three dimensions, with one tunable Pareto frontier per PDE, all controlled by the same six knobs. That's the paper. Thank you. I'm happy to take questions.</p>
+    <div class="qa-head">Forward-looking</div>
+    <p class="q">Where do you see this line of work in ten years, independent of your career?</p>
+    <p class="a">Learned PDE solvers will be routine in scientific computing the way automatic differentiation is routine in optimization today &mdash; if, and only if, the field figures out how to give them the guarantees classical solvers earned over the last century. I want to be part of the group that does that. I think architectural guarantees are the right primitive, and I think the chapter-per-property-class structure I've laid out here is a template other people can pick up for properties I don't address. If I'm right, the thesis is a useful early entry in a body of work that many people contribute to. If I'm wrong about the framing, the field will go a different direction and my chapters will still stand as individual contributions. Both outcomes are survivable.</p>
   </div>
 </section>
 
@@ -963,13 +842,13 @@ code, kbd {
 <section class="slide" id="claims">
   <h2><span class="num">&#9888;</span>Claims to verify (inline flag registry)</h2>
   <div class="claims-list">
-    <h3>Claims flagged in this presentation that are pending verification in the claims registry</h3>
+    <h3>Flagged claims pending verification in the paper's claims registry</h3>
     <ol>
-      <li><strong>Flag 1 (&sect;3).</strong> &ldquo;No prior paper closes the four-dimensional gap of architectural principle + EQ-compatibility + cold-start + multi-PDE multi-regime.&rdquo; Needs a systematic scan of the full literature-site bibliography in <code>literature-site/papers.json</code>. Bonneville et al. 2024 survey covers many PDEs with LaSDI-family non-intrusive methods; claim must narrow to &ldquo;in a projection-based NM-ROM with hyper-reduction.&rdquo;</li>
-      <li><strong>Flag 2 (&sect;6, &sect;7, &sect;11).</strong> &ldquo;Largest-$N$ fully-3D learned-decoder NM-ROM with EQ-style hyper-reduction in the literature corpus.&rdquo; Needs explicit exclusion of Barnett-Farhat 2022 (17M DoF, ECSW, quadratic manifold), Cicci-Fresca (39K 3D elastodynamics, learned HR), Xu-Duraisamy (506K 3D ship, non-intrusive). Each adjective &mdash; learned-decoder, EQ-style, fully 3D &mdash; must be load-bearing in the paper's exact phrasing.</li>
-      <li><strong>Flag 3 (&sect;10).</strong> &ldquo;LinearCP guarantees a bounded GN Hessian condition number.&rdquo; The proof requires $W_{\text{dir}}$ full column rank; this is verified empirically on trained models but not guaranteed by the training objective. Scope: the bound is uniform over $\mathbb{R}^k$, but the bound's constants depend on trained weights, and we have not characterized when the bound is tight. Empirically the condition number sits at $\mathcal{O}(10\!-\!100)$, well inside the bound.</li>
+      <li><strong>Flag 1 (Chapter 1 breadth, &sect;4).</strong> &ldquo;Eight PDE benchmarks across elliptic, parabolic, advection-dominated regimes, in 2D and 3D.&rdquo; Heat-2D, Navier&ndash;Stokes 2D/3D are planned or in flight; the claim as spoken here covers the landed set and flags the in-flight set explicitly.</li>
+      <li><strong>Flag 2 (scale, &sect;10).</strong> &ldquo;Largest $N$&rdquo; claim requires all four qualifiers to be load-bearing: learned decoder, EQ-style hyper-reduction, fully 3D, parametric sweep. Dropping any one admits Barnett&ndash;Farhat (17M DoF, quadratic manifold + ECSW) or Xu&ndash;Duraisamy (506K DoF, non-intrusive). The paper uses the full qualifier; the talk uses the same and acknowledges the qualifier if asked.</li>
+      <li><strong>Flag 3 (Proposition 1 assumption, &sect;4 and &sect;10).</strong> $W_{\text{dir}}$ full column rank is verified empirically on trained models but not enforced by the loss. The bound's constants depend on trained weights; the bound is uniform over $\mathbb{R}^k$ but conservative. All three facts are stated honestly in both paper and talk.</li>
     </ol>
-    <p style="margin-top:10px; font-size:13px; color:var(--muted);">Full claims registry (per-claim source, verification method, status) lives in the paper repo at <code>architecture-paper/claims_registry.md</code>. I will not over-state any flagged claim live &mdash; if asked, I will explicitly acknowledge the qualifier.</p>
+    <p style="margin-top:10px; font-size:13px; color:var(--muted);">Full claims registry lives at <code>architecture-paper/claims_registry.md</code> (paper repo). I will not over-state any flagged claim live &mdash; if asked, I will explicitly acknowledge the qualifier.</p>
   </div>
 </section>
 
